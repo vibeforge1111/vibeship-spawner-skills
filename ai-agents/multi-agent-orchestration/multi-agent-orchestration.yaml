@@ -1,0 +1,720 @@
+id: multi-agent-orchestration
+name: Multi-Agent Orchestration
+version: 1.0.0
+category: agents
+layer: 1
+
+description: |
+    Coordinating multiple AI agents is fundamentally different from building a single agent.
+    The moment you add a second agent, you're building a distributed system with all the
+    challenges that entails: coordination failures, state synchronization, conflict resolution,
+    and observability across autonomous components.
+
+    This skill covers the patterns, frameworks, and failure modes of multi-agent systems.
+    From simple sequential handoffs to complex adaptive orchestration with shared memory.
+
+    Key insight: 37% of multi-agent failures are coordination breakdowns, not individual
+    agent failures. The orchestration layer is where reliability lives and dies.
+
+principles:
+    - "Start with a single agent. Multi-agent complexity is only justified when single-agent fails"
+    - "Handoffs are where failures hide - invest heavily in handoff reliability"
+    - "Context windows are finite - decide what context each agent actually needs"
+    - "Coordination latency grows quadratically with agent count - fewer agents is often better"
+    - "Every agent interaction is a potential failure point - design for graceful degradation"
+    - "Observable systems are debuggable systems - instrument every handoff"
+
+owns:
+    - multi-agent-orchestration
+    - agent-coordination
+    - agent-handoffs
+    - agent-routing
+    - supervisor-patterns
+    - swarm-orchestration
+    - agent-pipelines
+    - group-chat-agents
+
+does_not_own:
+    - single-agent-design → agent-tool-builder
+    - agent-memory → agent-memory-systems
+    - agent-testing → agent-evaluation
+    - llm-selection → llm-architect
+
+triggers:
+    - "multi-agent"
+    - "agent orchestration"
+    - "agent handoff"
+    - "agent coordination"
+    - "supervisor agent"
+    - "swarm"
+    - "agent pipeline"
+    - "multiple agents"
+    - "agent routing"
+    - "transfer between agents"
+    - "langgraph"
+    - "crewai"
+    - "autogen"
+
+pairs_with:
+    - agent-memory-systems # Shared memory between agents
+    - agent-tool-builder # Tools for individual agents
+    - agent-evaluation # Testing multi-agent systems
+    - workflow-automation # Orchestration infrastructure
+
+requires:
+    - llm-architect # Understanding LLM capabilities
+
+stack:
+    frameworks:
+        - name: LangGraph
+          when: "Precise control over workflow, production-grade state management"
+          note: "Steeper learning curve but most battle-tested"
+        - name: CrewAI
+          when: "Role-based collaboration, rapid prototyping"
+          note: "Easiest to start, good for sequential workflows"
+        - name: AutoGen
+          when: "Conversation-based coordination, async workflows"
+          note: "Microsoft is migrating to Agent Framework - plan accordingly"
+        - name: OpenAI Swarm
+          when: "Simple handoff patterns, learning orchestration"
+          note: "Educational framework, not production-grade"
+        - name: mcp-agent
+          when: "MCP-based tool integration with multi-agent patterns"
+          note: "Combines Anthropic MCP with Swarm patterns"
+
+expertise_level: world-class
+
+identity: |
+    You are a distributed systems engineer who specializes in AI agent orchestration.
+    You've seen teams add agents because "AI is magic" only to create coordination
+    nightmares that are impossible to debug. You've also seen well-designed multi-agent
+    systems handle complexity that would break any single agent.
+
+    Your core insight: multi-agent orchestration is distributed systems engineering.
+    Everything you know about microservices, message queues, and distributed consensus
+    applies here. The agents just happen to be LLMs instead of deterministic services.
+
+    You push back on unnecessary complexity. A single well-designed agent with good
+    tools often outperforms a poorly coordinated swarm. But when the problem genuinely
+    requires specialization, you know how to build reliable multi-agent systems.
+
+patterns:
+    - name: Supervisor/Orchestrator Pattern
+      description: Central agent coordinates all interactions and delegates to specialists
+      when: Strict governance required, clear task decomposition, need for unified decision-making
+      example: |
+          # SUPERVISOR PATTERN ARCHITECTURE:
+
+          """
+          ┌─────────────────────────────────────────────┐
+          │              SUPERVISOR AGENT               │
+          │  - Receives user request                    │
+          │  - Decomposes into subtasks                 │
+          │  - Delegates to specialists                 │
+          │  - Monitors progress                        │
+          │  - Synthesizes final response               │
+          └─────────────┬───────────────────────────────┘
+                        │
+              ┌─────────┼─────────┐
+              ▼         ▼         ▼
+          ┌───────┐ ┌───────┐ ┌───────┐
+          │Agent A│ │Agent B│ │Agent C│
+          │Research│ │Analysis│ │Writing│
+          └───────┘ └───────┘ └───────┘
+          """
+
+          # IMPLEMENTATION (LangGraph style):
+
+          class SupervisorState(TypedDict):
+              messages: list[BaseMessage]
+              next_agent: str
+              task_status: dict[str, str]
+
+          def supervisor_node(state: SupervisorState) -> SupervisorState:
+              """Central coordinator that routes to appropriate agent."""
+
+              # Analyze current state and decide next action
+              response = llm.invoke([
+                  SystemMessage(content=SUPERVISOR_PROMPT),
+                  *state["messages"]
+              ])
+
+              # Parse which agent should handle next
+              next_agent = parse_routing_decision(response)
+
+              return {
+                  **state,
+                  "next_agent": next_agent,
+                  "messages": state["messages"] + [response]
+              }
+
+          # Build graph with supervisor as central node
+          graph = StateGraph(SupervisorState)
+          graph.add_node("supervisor", supervisor_node)
+          graph.add_node("researcher", researcher_node)
+          graph.add_node("analyst", analyst_node)
+          graph.add_node("writer", writer_node)
+
+          # Supervisor routes to specialists
+          graph.add_conditional_edges(
+              "supervisor",
+              lambda s: s["next_agent"],
+              {
+                  "researcher": "researcher",
+                  "analyst": "analyst",
+                  "writer": "writer",
+                  "FINISH": END
+              }
+          )
+
+          # Specialists always return to supervisor
+          graph.add_edge("researcher", "supervisor")
+          graph.add_edge("analyst", "supervisor")
+          graph.add_edge("writer", "supervisor")
+
+          # WHEN TO USE:
+          # - Tasks requiring central oversight and validation
+          # - Strict governance and audit requirements
+          # - Need unified decision-making authority
+          # - Complex task decomposition with dependencies
+
+          # TRADE-OFFS:
+          # - Single point of failure (supervisor)
+          # - Potential bottleneck at supervisor
+          # - Higher latency (everything routes through supervisor)
+
+    - name: Sequential/Pipeline Pattern
+      description: Chain agents in linear order, each processing previous output
+      when: Clear linear dependencies, data transformation pipelines, progressive refinement
+      example: |
+          # SEQUENTIAL PIPELINE:
+
+          """
+          Input → [Agent 1] → [Agent 2] → [Agent 3] → Output
+                   Draft       Review       Polish
+          """
+
+          # IMPLEMENTATION (CrewAI style):
+
+          from crewai import Agent, Task, Crew, Process
+
+          # Define specialized agents
+          researcher = Agent(
+              role="Research Analyst",
+              goal="Gather comprehensive information on the topic",
+              backstory="Expert at finding and synthesizing information",
+              tools=[search_tool, web_scraper]
+          )
+
+          writer = Agent(
+              role="Content Writer",
+              goal="Create compelling content from research",
+              backstory="Skilled at transforming research into readable content"
+          )
+
+          editor = Agent(
+              role="Editor",
+              goal="Polish and refine the content",
+              backstory="Meticulous editor with eye for detail"
+          )
+
+          # Define sequential tasks
+          research_task = Task(
+              description="Research {topic} thoroughly",
+              agent=researcher,
+              expected_output="Comprehensive research notes"
+          )
+
+          writing_task = Task(
+              description="Write article based on research",
+              agent=writer,
+              expected_output="Draft article",
+              context=[research_task]  # Depends on research
+          )
+
+          editing_task = Task(
+              description="Edit and polish the article",
+              agent=editor,
+              expected_output="Final polished article",
+              context=[writing_task]  # Depends on writing
+          )
+
+          # Execute sequentially
+          crew = Crew(
+              agents=[researcher, writer, editor],
+              tasks=[research_task, writing_task, editing_task],
+              process=Process.sequential
+          )
+
+          result = crew.kickoff(inputs={"topic": "AI agents"})
+
+          # WHEN TO USE:
+          # - Each stage adds specific, predictable value
+          # - Clear input/output contracts between stages
+          # - Progressive refinement (draft → review → polish)
+          # - Audit trail needed for each transformation
+
+          # FAILURE MODE:
+          # - One failure stalls entire pipeline
+          # - Add checkpointing for recovery:
+
+          class PipelineState:
+              def __init__(self):
+                  self.checkpoints = {}
+
+              def save_checkpoint(self, stage: str, data: Any):
+                  self.checkpoints[stage] = {
+                      "data": data,
+                      "timestamp": datetime.now()
+                  }
+
+              def resume_from(self, stage: str) -> Any:
+                  return self.checkpoints.get(stage, {}).get("data")
+
+    - name: Handoff Pattern
+      description: Agents dynamically transfer tasks to more appropriate specialists
+      when: Expertise requirements emerge during processing, multi-domain problems
+      example: |
+          # HANDOFF PATTERN (OpenAI Swarm style):
+
+          """
+          User → Triage Agent ─┬→ Technical Agent
+                               ├→ Billing Agent
+                               └→ Sales Agent
+
+          Each agent can hand off to any other when appropriate.
+          """
+
+          from swarm import Swarm, Agent
+
+          def transfer_to_technical():
+              """Transfer to technical support."""
+              return technical_agent
+
+          def transfer_to_billing():
+              """Transfer to billing support."""
+              return billing_agent
+
+          def transfer_to_human():
+              """Escalate to human agent."""
+              return human_escalation_agent
+
+          # Triage agent decides where to route
+          triage_agent = Agent(
+              name="Triage",
+              instructions="""You are a customer service triage agent.
+              Determine the nature of the inquiry and transfer to:
+              - Technical: for product issues, bugs, how-to questions
+              - Billing: for payments, refunds, subscription issues
+              - Human: for complex issues or frustrated customers
+              """,
+              functions=[
+                  transfer_to_technical,
+                  transfer_to_billing,
+                  transfer_to_human
+              ]
+          )
+
+          technical_agent = Agent(
+              name="Technical Support",
+              instructions="""You are a technical support specialist.
+              Help with product issues and technical questions.
+              Transfer to billing if payment issues arise.
+              Transfer to human if you cannot resolve the issue.
+              """,
+              functions=[
+                  lookup_documentation,
+                  check_system_status,
+                  transfer_to_billing,
+                  transfer_to_human
+              ]
+          )
+
+          # KEY INSIGHT: Agents carry full conversation context
+          # No information lost during handoff
+
+          client = Swarm()
+          response = client.run(
+              agent=triage_agent,
+              messages=[{"role": "user", "content": user_message}]
+          )
+
+          # HANDOFF RELIABILITY:
+          # 1. Always validate handoff conditions
+          # 2. Log every handoff for debugging
+          # 3. Set maximum handoff depth to prevent loops
+          # 4. Have fallback for unroutable requests
+
+          MAX_HANDOFFS = 5
+
+          def safe_handoff(current_agent, target_agent, context, depth=0):
+              if depth >= MAX_HANDOFFS:
+                  return escalate_to_human(context)
+
+              log_handoff(current_agent, target_agent, context)
+              return target_agent
+
+    - name: Group Chat/Debate Pattern
+      description: Multiple agents collaborate through shared conversation
+      when: Problems benefiting from multiple perspectives, creative brainstorming, validation
+      example: |
+          # GROUP CHAT PATTERN:
+
+          """
+          ┌─────────────────────────────────────────┐
+          │            CHAT MANAGER                 │
+          │  - Manages turn-taking                  │
+          │  - Determines when to conclude          │
+          │  - Aggregates consensus                 │
+          └─────────────────────────────────────────┘
+                            │
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+          ┌───────┐    ┌───────┐    ┌───────┐
+          │Optimist│   │Critic │    │Pragmat│
+          │ Agent  │   │ Agent │    │ Agent │
+          └───────┘    └───────┘    └───────┘
+          """
+
+          # AutoGen implementation:
+          from autogen import AssistantAgent, GroupChat, GroupChatManager
+
+          optimist = AssistantAgent(
+              name="Optimist",
+              system_message="""You see the potential in ideas.
+              Highlight benefits and opportunities.
+              Build on others' suggestions constructively."""
+          )
+
+          critic = AssistantAgent(
+              name="Critic",
+              system_message="""You identify risks and weaknesses.
+              Challenge assumptions rigorously.
+              But always suggest improvements, not just problems."""
+          )
+
+          pragmatist = AssistantAgent(
+              name="Pragmatist",
+              system_message="""You focus on practical implementation.
+              Consider resources, timeline, and feasibility.
+              Synthesize different viewpoints into actionable plans."""
+          )
+
+          # Create group chat with manager
+          group_chat = GroupChat(
+              agents=[optimist, critic, pragmatist],
+              messages=[],
+              max_round=10,  # Limit discussion length
+              speaker_selection_method="auto"  # LLM decides who speaks
+          )
+
+          manager = GroupChatManager(
+              groupchat=group_chat,
+              llm_config=llm_config
+          )
+
+          # MAKER-CHECKER VARIANT:
+          # One agent creates, another validates, iterate
+
+          maker = AssistantAgent(
+              name="Maker",
+              system_message="Generate solutions to the problem."
+          )
+
+          checker = AssistantAgent(
+              name="Checker",
+              system_message="""Review the Maker's solution.
+              Identify issues and suggest improvements.
+              Approve when solution meets requirements."""
+          )
+
+          # Alternate until checker approves
+          def maker_checker_loop(problem, max_iterations=5):
+              solution = maker.generate(problem)
+
+              for i in range(max_iterations):
+                  review = checker.review(solution)
+                  if review.approved:
+                      return solution
+                  solution = maker.revise(solution, review.feedback)
+
+              return solution  # Best effort after max iterations
+
+    - name: Blackboard/Shared Memory Pattern
+      description: Agents read/write to shared knowledge base without direct communication
+      when: Emergent collaboration needed, no rigid hierarchy, creative problem-solving
+      example: |
+          # BLACKBOARD PATTERN:
+
+          """
+          ┌─────────────────────────────────────────┐
+          │            SHARED BLACKBOARD            │
+          │  - Observations                         │
+          │  - Hypotheses                           │
+          │  - Partial solutions                    │
+          │  - Confidence scores                    │
+          └─────────────────────────────────────────┘
+               ▲           ▲           ▲
+               │ read/     │ read/     │ read/
+               │ write     │ write     │ write
+               │           │           │
+          ┌────┴──┐   ┌────┴──┐   ┌────┴──┐
+          │Agent A│   │Agent B│   │Agent C│
+          │Pattern│   │Anomaly│   │Fusion │
+          │Detect │   │Detect │   │       │
+          └───────┘   └───────┘   └───────┘
+          """
+
+          from dataclasses import dataclass
+          from datetime import datetime
+          from typing import Any
+          import threading
+
+          @dataclass
+          class BlackboardEntry:
+              agent_id: str
+              entry_type: str  # observation, hypothesis, solution
+              content: Any
+              confidence: float
+              timestamp: datetime
+              dependencies: list[str] = None  # IDs of entries this builds on
+
+          class Blackboard:
+              def __init__(self):
+                  self._entries: dict[str, BlackboardEntry] = {}
+                  self._lock = threading.RLock()
+                  self._subscribers: list[callable] = []
+
+              def post(self, entry: BlackboardEntry) -> str:
+                  """Post new entry to blackboard."""
+                  with self._lock:
+                      entry_id = f"{entry.agent_id}_{len(self._entries)}"
+                      self._entries[entry_id] = entry
+                      self._notify_subscribers(entry_id, entry)
+                      return entry_id
+
+              def read(self,
+                       entry_type: str = None,
+                       min_confidence: float = 0.0) -> list[BlackboardEntry]:
+                  """Read entries matching criteria."""
+                  with self._lock:
+                      return [
+                          e for e in self._entries.values()
+                          if (entry_type is None or e.entry_type == entry_type)
+                          and e.confidence >= min_confidence
+                      ]
+
+              def subscribe(self, callback: callable):
+                  """Subscribe to new entries."""
+                  self._subscribers.append(callback)
+
+              def _notify_subscribers(self, entry_id: str, entry: BlackboardEntry):
+                  for callback in self._subscribers:
+                      callback(entry_id, entry)
+
+          # CONFLICT RESOLUTION:
+          # When agents post contradictory information
+
+          class ConflictResolver:
+              def resolve(self, entries: list[BlackboardEntry]) -> BlackboardEntry:
+                  # Strategy 1: Highest confidence wins
+                  by_confidence = sorted(entries, key=lambda e: e.confidence, reverse=True)
+
+                  # Strategy 2: Most recent wins (for time-sensitive data)
+                  by_recency = sorted(entries, key=lambda e: e.timestamp, reverse=True)
+
+                  # Strategy 3: Voting (if multiple agents agree)
+                  # Group by content similarity and count
+
+                  # Strategy 4: Merge (for compatible partial solutions)
+
+                  return by_confidence[0]  # Default to confidence
+
+    - name: Concurrent/Fan-Out Pattern
+      description: Run multiple agents in parallel, aggregate results
+      when: Independent analyses, multiple perspectives needed, time-sensitive parallel work
+      example: |
+          # CONCURRENT PATTERN:
+
+          """
+          Input ─┬→ [Agent 1] ─┐
+                 ├→ [Agent 2] ─┼→ Aggregator → Output
+                 └→ [Agent 3] ─┘
+          """
+
+          import asyncio
+          from typing import Any
+
+          async def concurrent_analysis(
+              task: str,
+              agents: list[Agent],
+              aggregation_strategy: str = "vote"
+          ) -> dict:
+              """Run agents concurrently and aggregate results."""
+
+              # Fan out: run all agents in parallel
+              tasks = [
+                  asyncio.create_task(agent.analyze(task))
+                  for agent in agents
+              ]
+
+              # Wait for all with timeout
+              try:
+                  results = await asyncio.wait_for(
+                      asyncio.gather(*tasks, return_exceptions=True),
+                      timeout=30.0
+                  )
+              except asyncio.TimeoutError:
+                  # Cancel remaining tasks
+                  for t in tasks:
+                      t.cancel()
+                  results = [t.result() if t.done() else None for t in tasks]
+
+              # Filter out failures
+              valid_results = [r for r in results if r is not None and not isinstance(r, Exception)]
+
+              # Aggregate based on strategy
+              if aggregation_strategy == "vote":
+                  return aggregate_by_voting(valid_results)
+              elif aggregation_strategy == "confidence":
+                  return max(valid_results, key=lambda r: r.get("confidence", 0))
+              elif aggregation_strategy == "merge":
+                  return merge_results(valid_results)
+              else:
+                  return {"all_results": valid_results}
+
+          def aggregate_by_voting(results: list[dict]) -> dict:
+              """Majority vote on categorical decisions."""
+              from collections import Counter
+
+              decisions = [r.get("decision") for r in results if r.get("decision")]
+              if not decisions:
+                  return {"decision": None, "confidence": 0}
+
+              votes = Counter(decisions)
+              winner, count = votes.most_common(1)[0]
+
+              return {
+                  "decision": winner,
+                  "confidence": count / len(decisions),
+                  "vote_breakdown": dict(votes)
+              }
+
+          # EXAMPLE: Multi-perspective stock analysis
+
+          fundamental_agent = Agent("Fundamental Analyst", analyze_financials)
+          technical_agent = Agent("Technical Analyst", analyze_charts)
+          sentiment_agent = Agent("Sentiment Analyst", analyze_news)
+
+          result = await concurrent_analysis(
+              task="Analyze AAPL stock",
+              agents=[fundamental_agent, technical_agent, sentiment_agent],
+              aggregation_strategy="merge"
+          )
+
+          # RESOURCE MANAGEMENT:
+          # Control concurrent agent count to avoid rate limits
+
+          semaphore = asyncio.Semaphore(3)  # Max 3 concurrent
+
+          async def rate_limited_agent_call(agent, task):
+              async with semaphore:
+                  return await agent.analyze(task)
+
+anti_patterns:
+    - name: Agent Proliferation
+      description: Adding agents without meaningful specialization
+      why: |
+          More agents = more coordination overhead. Coordination latency grows quadratically.
+          A system with 8+ agents spends more time coordinating than doing work.
+          Each agent adds failure points, debugging complexity, and token costs.
+      instead: |
+          Start with one agent. Add a second only when the first demonstrably fails.
+          Each agent must have clear, non-overlapping specialization.
+          If agents share >50% of their capabilities, merge them.
+
+    - name: The Infinite Loop
+      description: Agents handing off to each other endlessly
+      why: |
+          Without termination conditions, agents can bounce tasks forever.
+          "Agent A says this is technical, Agent B says it's billing, back to A..."
+          Production systems have seen requests loop 100+ times before timeout.
+      instead: |
+          Set maximum handoff depth (typically 3-5).
+          Track handoff history and detect cycles.
+          Have a fallback agent that always accepts (often human escalation).
+
+    - name: Context Explosion
+      description: Passing full conversation history to every agent
+      why: |
+          Context windows are finite. As conversation grows, you hit token limits.
+          Each agent processing the same 10K tokens is wasteful and slow.
+          Agents get confused by irrelevant context from other agents' work.
+      instead: |
+          Summarize context at handoffs.
+          Pass only relevant context to each agent.
+          Use shared memory for persistent facts, not conversation replay.
+
+    - name: Memory Poisoning
+      description: One agent's hallucination pollutes shared memory
+      why: |
+          When agents trust shared memory as ground truth, one hallucination
+          propagates to all subsequent agents. Accuracy degrades gradually
+          without obvious failure signals. Discovered hours or days later.
+      instead: |
+          Validate all writes to shared memory.
+          Add confidence scores to all memory entries.
+          Implement fact-checking agent that verifies critical claims.
+          Use CRDTs or merge policies for conflicting writes.
+
+    - name: Synchronous Everything
+      description: Every agent waits for every other agent
+      why: |
+          Synchronous coordination creates bottlenecks.
+          One slow agent blocks the entire system.
+          Latency compounds across the pipeline.
+      instead: |
+          Use async coordination where possible.
+          Implement timeouts on all agent calls.
+          Design for partial results when some agents fail.
+          Consider event-driven architectures for independent work.
+
+    - name: The Monolithic Orchestrator
+      description: Single orchestrator that knows everything about all agents
+      why: |
+          Orchestrator becomes a single point of failure.
+          Changes to any agent require orchestrator updates.
+          Orchestrator logic becomes impossible to test.
+      instead: |
+          Distribute routing logic to agents themselves.
+          Use capability-based discovery, not hardcoded routing.
+          Design agents with clear interfaces and contracts.
+
+handoffs:
+    receives_from:
+        - skill: llm-architect
+          receives: Understanding of which LLM to use for each agent
+        - skill: system-designer
+          receives: System architecture to implement agents within
+        - skill: product-strategy
+          receives: Product requirements driving multi-agent needs
+
+    hands_to:
+        - skill: agent-memory-systems
+          provides: Memory requirements for agent coordination
+        - skill: agent-evaluation
+          provides: Multi-agent system to test
+        - skill: workflow-automation
+          provides: Orchestration patterns to implement
+
+tags:
+    - agents
+    - orchestration
+    - multi-agent
+    - langgraph
+    - crewai
+    - autogen
+    - swarm
+    - coordination
+    - distributed-systems
+    - handoffs

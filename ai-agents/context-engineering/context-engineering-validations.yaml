@@ -1,0 +1,40 @@
+# Validations - Context Engineering
+# Tests to verify context management strategies
+
+version: 1.0.0
+skill_id: context-engineering
+
+validations:
+  - id: verify-cache-headers
+    title: Verify Anthropic Cache Headers
+    description: Ensure cache_control headers are present and correctly positioned for prefix caching
+    steps:
+      - Trigger: "Inspect API call payload"
+      - Check: "Do the first N blocks have `cache_control: {type: 'ephemeral'}`?"
+      - Check: "Are cached blocks strictly contiguous at the start?"
+      - Check: "Is the final cached block large enough (>1024 tokens) to be worth caching?"
+
+  - id: check-token-budget
+    title: Verify Token Budget Compliance
+    description: Ensure the constructed prompt fits within safety limits
+    steps:
+      - Action: "Count total tokens in prompt"
+      - Check: "Is total < (Model Limit - Safety Buffer)?"
+      - Check: "Is Output Reserve (e.g. 4096 tokens) maintained?"
+
+  - id: test-lost-in-middle
+    title: Needle In A Haystack Test
+    description: Verify model can retrieve specific fact from middle of context
+    steps:
+      - Action: "Insert 'The secret code is Blue-7' in the middle of the document set"
+      - Action: "Query context: 'What is the secret code?'"
+      - Expect: "Agent responds 'Blue-7'"
+      - Fallback: "If fail, move document to start/end or use 'Recall Beacons'"
+
+  - id: serialization-check
+    title: Verify Context Format
+    description: Ensure messages are properly formatted for the model API
+    steps:
+      - Check: "Are roles correct (user/assistant/system)?"
+      - Check: "Are checking for empty content blocks?"
+      - Check: "Are images base64 encoded correctly if present?"

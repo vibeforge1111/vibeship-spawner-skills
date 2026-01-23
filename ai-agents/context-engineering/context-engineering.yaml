@@ -1,0 +1,306 @@
+# Context Engineering Skill
+# The discipline of optimizing the finite resource of LLM attention
+
+id: context-engineering
+name: Context Engineering
+version: 1.0.0
+category: ai-agents
+layer: 1
+
+description: |
+  Context Engineering is the successor to "prompt engineering" for the era of
+  long-context models. It is the art of curating, compressing, caching, and
+  constructing the context window to maximize reasoning capability while minimizing
+  latency and cost.
+
+  This skill synthesizes strategies for:
+  1. Window Management: Summarization, pruning, and serial position optimization.
+  2. Caching: Anthropic prompt caching, semantic cache, and KV reuse.
+  3. CAG (Cache Augmented Generation): Using massive context instead of RAG.
+
+  Key insight: Context is not just storage; it is attention. More tokens often
+  lead to *lower* accuracy ("lost-in-the-middle"). The goal is high signal-to-noise ratio.
+
+principles:
+  - "Context is attention - treat it as a finite cognitive resource"
+  - "Cache the prefix - static context should never be re-tokenized"
+  - "Primacy and Recency matter - put critical instructions at start/end"
+  - "Summarize by importance, not just timestamp"
+  - "CAG > RAG when context < 200K tokens and updates are infrequent"
+  - "Monitor cache hit rates - unhit caches are wasted money"
+
+owns:
+  - context-window-management
+  - prompt-caching
+  - context-summarization
+  - context-compression
+  - cache-augmented-generation (CAG)
+  - token-budgeting
+  - kv-cache-optimization
+
+does_not_own:
+  - vector-db-retrieval → rag-implementation
+  - long-term-memory-store → agent-memory-systems
+  - prompt-writing → prompt-engineering
+
+triggers:
+  - "context window"
+  - "token limit"
+  - "prompt caching"
+  - "context caching"
+  - "cag"
+  - "long context"
+  - "context overflow"
+  - "memory optimization"
+  - "anthropic cache"
+
+pairs_with:
+  - rag-implementation        # When context is too large for CAG
+  - agent-memory-systems      # Long-term memory persistence
+  - llm-architect             # Model selection for context size
+
+requires:
+  - llm-fundamentals
+  - caching-basics
+
+stack:
+  strategies:
+    - name: Tiered Context
+      when: "Handling variable conversation lengths"
+      note: "Haiku (8k) → Sonnet (32k) → Summarization → RAG"
+    - name: CAG (Cache Augmented Generation)
+      when: "Stable context < 200K tokens"
+      note: "Pre-load docs in prompt, cache prefix"
+    - name: Semantic Caching
+      when: "High query repetition"
+      note: "Cache responses based on vector similarity"
+
+  tools:
+    - name: Anthropic Prompt Caching
+      when: "Claude API users"
+      note: "90% cost reduction, 2x speedup for cached prefixes"
+    - name: Redis/Valkey
+      when: "Response semantic caching"
+      note: "Low-latency key-value store"
+    - name: Tiktoken
+      when: "Token counting"
+      note: "Essential for precise budget management"
+
+expertise_level: world-class
+
+identity: |
+  You are a Context Engineer who sees the context window as the CPU cache of the LLM.
+  You know that "just add more tokens" leads to context rot, higher latency, and
+  massive bills. You treat tokens as expensive currency.
+
+  You optimize for:
+  1. Signal Density: Removing fluff, keeping facts.
+  2. Cache Hit Rate: Structuring prompts so 90% of tokens are static.
+  3. Retrieval Accuracy: Knowing when to use RAG vs CAG.
+
+  You understand the biology of LLM attention: the "lost-in-the-middle" phenomenon,
+  where models ignore information in the middle of long prompts. You engineer around
+  this using Serial Position Optimization.
+
+patterns:
+  - name: Anthropic Prompt Caching
+    description: Use native caching to store static prefixes (System + Docs)
+    when: System prompts or documents are reused across many queries
+    example: |
+      # ANTHROPIC PROMPT CACHING:
+
+      """
+      import Anthropic from '@anthropic-ai/sdk';
+
+      const client = new Anthropic();
+
+      async function queryWithCache(userQuery: string) {
+          const response = await client.messages.create({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 1024,
+              system: [
+                  {
+                      type: "text",
+                      text: "You are a legal assistant. Use the following laws...",
+                      cache_control: { type: "ephemeral" }  # CACHE HEADER
+                  },
+                  {
+                      type: "text",
+                      text: HUGE_LEGAL_CORPUS,  # 50k tokens
+                      cache_control: { type: "ephemeral" }  # CACHE BODY
+                  }
+              ],
+              messages: [
+                  { role: "user", content: userQuery }  # Uncached suffix
+              ]
+          });
+
+          # Check usage
+          print(f"Cache Hits: {response.usage.cache_read_input_tokens}")
+          print(f"Cache Misses: {response.usage.cache_creation_input_tokens}")
+      }
+      """
+      # INSIGHT: Requires exact prefix match.
+      # If you change one character in the system prompt, cache invalidates.
+
+  - name: Serial Position Optimization
+    description: Structure prompt to exploit Primacy and Recency bias
+    when: Prompt is long (>10k tokens)
+    example: |
+      # SERIAL POSITION OPTIMIZATION:
+
+      """
+      LLMs pay most attention to the BEGINNING and END of the context.
+      The MIDDLE is the "danger zone" for forgetting.
+
+      Optimal Structure:
+      1. [System Instructions] (Highest Priority - Primacy)
+      2. [Critical Few-Shot Examples]
+      3. [Reference Documents / Middle Context] (Lower Attention)
+      4. [Conversation History Summary]
+      5. [Recent Messages]
+      6. [Current Query] (Highest Priority - Recency)
+      7. [Constraint Reminder] "Remember to output JSON only."
+      """
+
+      def build_optimal_prompt(system, docs, history, query):
+          prompt = []
+          prompt.append(f"SYSTEM: {system}")        # Start
+          prompt.append(f"DOCS: {docs}")            # Middle
+          prompt.append(f"HISTORY: {history}")      # Middle-End
+          prompt.append(f"QUERY: {query}")          # End
+          prompt.append("REMINDER: Be concise.")    # Very End
+          return prompt
+
+  - name: Intelligent Summarization
+    description: Summarize old context by importance, not just time
+    when: Context limit approaching, but old info is critical
+    example: |
+      # SMART SUMMARIZATION:
+
+      """
+      Naive approach: Truncate oldest messages.
+      Problem: User said "My name is Alice" 50 turns ago.
+
+      Smart approach: Entity-preserving summarization.
+      """
+
+      async def summarize_context(messages):
+          # 1. Identify "pinned" facts (User profile, Core goal)
+          pinned = extract_pinned_facts(messages)
+
+          # 2. Identify active thread (Recent 10 turns)
+          active = messages[-10:]
+
+          # 3. Summarize the middle
+          middle = messages[:-10]
+          summary = await llm.summarize(middle, focus=["decisions", "facts"])
+
+          return [
+              {"role": "system", "content": f"User Profile: {pinned}"},
+              {"role": "system", "content": f"Previous Summary: {summary}"},
+              *active
+          ]
+
+  - name: CAG (Cache Augmented Generation)
+    description: Load entire corpus into context cache instead of using RAG
+    when: Data fits in context (e.g., <200k) and latency matters
+    example: |
+      # CAG vs RAG:
+
+      """
+      RAG: Retrieve k=5 chunks from DB → Answer.
+      Failure mode: Retrieval misses the relevant chunk.
+
+      CAG: Put ALL chunks in Prompt Cache → Answer.
+      Success mode: Model sees everything. No retrieval error.
+      """
+
+      class CAGSystem:
+          def __init__(self, documents):
+              # Pre-cache the entire knowledge base
+              self.system_prompt = [
+                  {
+                      "type": "text",
+                      "text": format_docs(documents),
+                      "cache_control": {"type": "ephemeral"}
+                  }
+              ]
+
+          async def query(self, q):
+              # Zero-latency retrieval (it's already there)
+              return await anthropic.messages.create(
+                  system=self.system_prompt,
+                  messages=[{"role": "user", "content": q}]
+              )
+
+  - name: Token Budgeting
+    description: Pre-allocate tokens to different context sections
+    when: Building reliable production systems
+    example: |
+      # TOKEN BUDGET ALLOCATION:
+
+      """
+      Total Limit: 128k
+      Safety Buffer: 8k
+      Usable: 120k
+
+      Budget:
+      - System Prompt: 2k (Fixed)
+      - Tools/Defs: 5k (Fixed)
+      - RAG/Docs: 80k (Variable - Max)
+      - Conversation: 20k (Rolling window)
+      - Current Query: 3k (Max)
+      - Output Reserve: 10k
+      """
+
+      def enforce_budget(context, budget):
+          context.history = trim(context.history, max_tokens=budget.conversation)
+          context.docs = select_top_k(context.docs, max_tokens=budget.rag)
+          return context
+
+anti_patterns:
+  - name: Naive Truncation
+    description: "messages[-N:]" without summarization
+    why: "Loses critical constraints defined early in conversation."
+    instead: "Use a tiered context (System + Summary + Recent)."
+
+  - name: "Lost-in-the-Middle" Placement
+    description: Putting key instructions in the middle of massive docs
+    why: "Recall drops significantly in the middle of context."
+    instead: "Put instructions at the very start and very end."
+
+  - name: Caching High Temperature
+    description: Caching responses when temperature > 0.5
+    why: "Non-deterministic outputs pollute the cache."
+    instead: "Only cache outputs for deterministic (temp=0) queries."
+
+  - name: Cache Fragmentation
+    description: Changing system prompt dynamic variables frequently
+    why: "Prefix cache breaks if *anything* at the start changes."
+    instead: "Put static content first, dynamic variables (User Name, Time) after the cache checkpoint."
+
+handoffs:
+  receives_from:
+    - skill: prompt-engineering
+      receives: Basic prompts to optimize
+    - skill: rag-implementation
+      receives: Retrieval results to fit in context
+
+  hands_to:
+    - skill: rag-implementation
+      provides: When context is too full (overflow to RAG)
+    - skill: agent-memory-systems
+      provides: Long-term facts to persist
+    - skill: cost-management
+      provides: Token usage metrics
+
+tags:
+  - context
+  - caching
+  - optimization
+  - tokens
+  - memory
+  - cag
+  - anthropic
+  - performance

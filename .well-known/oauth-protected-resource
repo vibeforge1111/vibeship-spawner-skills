@@ -1,0 +1,6 @@
+{
+  "authorization_servers": [
+    "https://accounts.google.com"
+  ],
+  "resource": "http://localhost:3000"
+}
