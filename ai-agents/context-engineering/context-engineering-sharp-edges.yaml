@@ -1,0 +1,116 @@
+# Sharp Edges - Context Engineering
+# The gotchas that break context management
+
+version: 1.0.0
+skill_id: context-engineering
+
+sharp_edges:
+  - id: cache-fragmentation-prefix
+    severity: high
+    title: Anthropic Prompt Cache breaks on single char change
+    situation: Dynamic content inserted before cached content
+    symptom: |
+      Cache hit rate is 0%. Latency is high. Costs are high.
+      "I enabled caching but it's not working!"
+    why: |
+      Anthropic's prompt caching works on *prefixes*. The cache key is the
+      content of the block PLUS all preceding blocks.
+
+      Block 1: System Prompt (Cached)
+      Block 2: User Name (Dynamic)
+      Block 3: Large Doc (Cached)
+
+      If Block 2 changes (different user), the cache for Block 3 is INVALIDATED
+      because the prefix changed.
+    solution: |
+      # Put all static content FIRST.
+      # Put dynamic content LAST.
+
+      # BAD:
+      system_prompt = f"Hello {user_name}. Here are the laws:\n{laws}"
+
+      # GOOD:
+      system = [
+        {"text": f"Here are the laws:\n{laws}", "cache_control": ...},
+        {"text": f"Hello {user_name}."} # Dynamic part comes AFTER
+      ]
+    detection_pattern:
+      - "cache miss"
+      - "dynamic system prompt"
+      - "f-string"
+      - "template"
+
+  - id: lost-in-the-middle
+    severity: medium
+    title: LLMs ignore the middle of long contexts
+    situation: Passing 50 docs in the middle of a 100k prompt
+    symptom: |
+      Model hallucinates or says "I don't know" even though the answer is in the text.
+      Accuracy drops from 90% (start/end) to 40% (middle).
+    why: |
+      Attention mechanisms in Transformers have a "U-shaped" performance curve.
+      They focus heavily on the system prompt (primacy) and the latest user query (recency).
+      The middle tokens get drowned out.
+    solution: |
+      # Reorder context for signal density.
+
+      1. System Prompt (Instructions) -> START
+      2. Most Critical Documents -> START/END
+      3. Less Critical Documents -> MIDDLE
+      4. User Query -> END
+
+      # Use "Recall Beacons"
+      # Insert reminders in the middle:
+      # "Reminder: Use the documents provided above."
+    detection_pattern:
+      - "hallucination"
+      - "ignored context"
+      - "middle"
+      - "recall"
+
+  - id: context-stuffing-latency
+    severity: high
+    title: Filling context adds linear latency
+    situation: "Just throw everything in, it fits in 200k!"
+    symptom: |
+      TTFT (Time To First Token) jumps from 500ms to 5 seconds.
+      User experience feels sluggish.
+    why: |
+      Prefix-caching helps, but the model still has to attend to all tokens.
+      Processing 100k tokens takes time, even if cached (though faster).
+      Output generation slows down as context grows (KV cache size).
+    solution: |
+      # Budget your tokens.
+      # Don't use 100k if 10k will do.
+
+      limit = 20000
+      if count_tokens(docs) > limit:
+         docs = rank_and_filter(docs, limit)
+    detection_pattern:
+      - "slow"
+      - "latency"
+      - "ttft"
+      - "sluggish"
+
+  - id: summary-lossiness
+    severity: medium
+    title: Summarization deletes specific facts
+    situation: Summarizing conversation history to save tokens
+    symptom: |
+      User: "My code is 1234."
+      ... 50 turns ...
+      Agent: "I don't know your code."
+    why: |
+      Summarization algorithms optimize for "gist", not specific entities.
+      Numbers, codes, and specific names are often lost in compression.
+    solution: |
+      # 1. Entity-Extraction Summarization
+      prompt = "Summarize the conversation but PRESERVE all: Phone numbers, codes, dates, names."
+
+      # 2. Side-channel Memory
+      # Extract facts to a separate "User Profile" block that is never summarized, just updated.
+    detection_pattern:
+      - "forgot"
+      - "lost details"
+      - "summarization"
+      - "memory"

@@ -1,0 +1,342 @@
+# Computer Use Agents Skill
+# AI agents that control computers through visual perception and actions
+
+id: computer-use-agents
+name: Computer Use Agents
+category: agents
+description: |
+    Build AI agents that interact with computers like humans do - viewing screens,
+    moving cursors, clicking buttons, and typing text. Covers Anthropic's Computer
+    Use, OpenAI's Operator/CUA, and open-source alternatives. Critical focus on
+    sandboxing, security, and handling the unique challenges of vision-based control.
+
+version: 1.0.0
+
+triggers:
+    - "computer use"
+    - "desktop automation agent"
+    - "screen control AI"
+    - "vision-based agent"
+    - "GUI automation"
+    - "Claude computer"
+    - "OpenAI Operator"
+    - "browser agent"
+    - "visual agent"
+    - "RPA with AI"
+
+# ============================================================================
+# CORE PATTERNS
+# ============================================================================
+
+patterns:
+    - id: perception-reasoning-action-loop
+      name: Perception-Reasoning-Action Loop
+      description: |
+          The fundamental architecture of computer use agents: observe screen,
+          reason about next action, execute action, repeat. This loop integrates
+          vision models with action execution through an iterative pipeline.
+
+          Key components:
+          1. PERCEPTION: Screenshot captures current screen state
+          2. REASONING: Vision-language model analyzes and plans
+          3. ACTION: Execute mouse/keyboard operations
+          4. FEEDBACK: Observe result, continue or correct
+
+          Critical insight: Vision agents are completely still during "thinking"
+          phase (1-5 seconds), creating a detectable pause pattern.
+      when_to_use:
+          - "Building any computer use agent from scratch"
+          - "Integrating vision models with desktop control"
+          - "Understanding agent behavior patterns"
+      implementation: |
+          from anthropic import Anthropic
+          from PIL import Image
+          import base64
+          import pyautogui
+          import time
+
+          class ComputerUseAgent:
+              """
+              Perception-Reasoning-Action loop implementation.
+              Based on Anthropic Computer Use patterns.
+              """
+
+              def __init__(self, client: Anthropic, model: str = "claude-sonnet-4-20250514"):
+                  self.client = client
+                  self.model = model
+                  self.max_steps = 50  # Prevent runaway loops
+                  self.action_delay = 0.5  # Seconds between actions
+
+              def capture_screenshot(self) -> str:
+                  """Capture screen and return base64 encoded image."""
+                  screenshot = pyautogui.screenshot()
+                  # Resize for token efficiency (1280x800 is good balance)
+                  screenshot = screenshot.resize((1280, 800), Image.LANCZOS)
+
+                  import io
+                  buffer = io.BytesIO()
+                  screenshot.save(buffer, format="PNG")
+                  return base64.b64encode(buffer.getvalue()).decode()
+
+              def execute_action(self, action: dict) -> dict:
+                  """Execute mouse/keyboard action on the computer."""
+                  action_type = action.get("type")
+
+                  if action_type == "click":
+                      x, y = action["x"], action["y"]
+                      button = action.get("button", "left")
+                      pyautogui.click(x, y, button=button)
+                      return {"success": True, "action": f"clicked at ({x}, {y})"}
+
+                  elif action_type == "type":
+                      text = action["text"]
+                      pyautogui.typewrite(text, interval=0.02)
+                      return {"success": True, "action": f"typed {len(text)} chars"}
+
+                  elif action_type == "key":
+                      key = action["key"]
+                      pyautogui.press(key)
+                      return {"success": True, "action": f"pressed {key}"}
+
+                  elif action_type == "scroll":
+                      direction = action.get("direction", "down")
+                      amount = action.get("amount", 3)
+                      scroll = -amount if direction == "down" else amount
+                      pyautogui.scroll(scroll)
+                      return {"success": True, "action": f"scrolled {direction}"}
+
+                  elif action_type == "move":
+                      x, y = action["x"], action["y"]
+                      pyautogui.moveTo(x, y)
+                      return {"success": True, "action": f"moved to ({x}, {y})"}
+
+                  else:
+                      return {"success": False, "error": f"Unknown action: {action_type}"}
+
+              def run(self, task: str) -> dict:
+                  """
+                  Run perception-reasoning-action loop until task complete.
+
+                  The loop:
+                  1. Screenshot current state
+                  2. Send to vision model with task context
+                  3. Parse action from response
+                  4. Execute action
+                  5. Repeat until done or max steps
+                  """
+                  messages = []
+                  step_count = 0
+
+                  system_prompt = """You are a computer use agent. You can see the screen
+                  and control mouse/keyboard.
+
+                  Available actions (respond with JSON):
+                  - {"type": "click", "x": 100, "y": 200, "button": "left"}
+                  - {"type": "type", "text": "hello world"}
+                  - {"type": "key", "key": "enter"}
+                  - {"type": "scroll", "direction": "down", "amount": 3}
+                  - {"type": "done", "result": "task completed successfully"}
+
+                  Always respond with ONLY a JSON action object.
+                  Be precise with coordinates - click exactly where needed.
+                  If you see an error, try to recover.
+                  """
+
+                  while step_count < self.max_steps:
+                      step_count += 1
+
+                      # 1. PERCEPTION: Capture current screen
+                      screenshot_b64 = self.capture_screenshot()
+
+                      # 2. REASONING: Send to vision model
+                      user_content = [
+                          {"type": "text", "text": f"Task: {task}\n\nStep {step_count}. What action should I take?"},
+                          {"type": "image", "source": {
+                              "type": "base64",
+                              "media_type": "image/png",
+                              "data": screenshot_b64
+                          }}
+                      ]
+
+                      messages.append({"role": "user", "content": user_content})
+
+                      response = self.client.messages.create(
+                          model=self.model,
+                          max_tokens=1024,
+                          system=system_prompt,
+                          messages=messages
+                      )
+
+                      assistant_message = response.content[0].text
+                      messages.append({"role": "assistant", "content": assistant_message})
+
+                      # 3. Parse action from response
+                      import json
+                      try:
+                          action = json.loads(assistant_message)
+                      except json.JSONDecodeError:
+                          # Try to extract JSON from response
+                          import re
+                          match = re.search(r'\{[^}]+\}', assistant_message)
+                          if match:
+                              action = json.loads(match.group())
+                          else:
+                              continue
+
+                      # Check if done
+                      if action.get("type") == "done":
+                          return {
+                              "success": True,
+                              "result": action.get("result"),
+                              "steps": step_count
+                          }
+
+                      # 4. ACTION: Execute
+                      result = self.execute_action(action)
+
+                      # Small delay for UI to update
+                      time.sleep(self.action_delay)
+
+                  return {
+                      "success": False,
+                      "error": "Max steps reached",
+                      "steps": step_count
+                  }
+
+          # Usage
+          agent = ComputerUseAgent(Anthropic())
+          result = agent.run("Open Chrome and search for 'weather today'")
+      anti_patterns:
+          - "Running without step limits (infinite loops)"
+          - "No delay between actions (UI can't keep up)"
+          - "Screenshots at full resolution (token explosion)"
+          - "Ignoring action failures (no recovery)"
+
+    - id: sandboxed-environment-pattern
+      name: Sandboxed Environment Pattern
+      description: |
+          Computer use agents MUST run in isolated, sandboxed environments.
+          Never give agents direct access to your main system - the security
+          risks are too high. Use Docker containers with virtual desktops.
+
+          Key isolation requirements:
+          1. NETWORK: Restrict to necessary endpoints only
+          2. FILESYSTEM: Read-only or scoped to temp directories
+          3. CREDENTIALS: No access to host credentials
+          4. SYSCALLS: Filter dangerous system calls
+          5. RESOURCES: Limit CPU, memory, time
+
+          The goal is "blast radius minimization" - if the agent goes wrong,
+          damage is contained to the sandbox.
+      when_to_use:
+          - "Deploying any computer use agent"
+          - "Testing agent behavior safely"
+          - "Running untrusted automation tasks"
+      implementation: |
+          # Dockerfile for sandboxed computer use environment
+          # Based on Anthropic's reference implementation pattern
+
+          FROM ubuntu:22.04
+
+          # Install desktop environment
+          RUN apt-get update && apt-get install -y \
+              xvfb \
+              x11vnc \
+              fluxbox \
+              xterm \
+              firefox \
+              python3 \
+              python3-pip \
+              supervisor
+
+          # Security: Create non-root user
+          RUN useradd -m -s /bin/bash agent && \
+              mkdir -p /home/agent/.vnc
+
+          # Install Python dependencies
+          COPY requirements.txt /tmp/
+          RUN pip3 install -r /tmp/requirements.txt
+
+          # Security: Drop capabilities
+          RUN apt-get install -y --no-install-recommends libcap2-bin && \
+              setcap -r /usr/bin/python3 || true
+
+          # Copy agent code
+          COPY --chown=agent:agent . /app
+          WORKDIR /app
+
+          # Supervisor config for virtual display + VNC
+          COPY supervisord.conf /etc/supervisor/conf.d/
+          # ... (truncated for brevity, see skill.yaml)
+      anti_patterns:
+          - "Running agents on host system directly"
+          - "Giving sandbox full network access"
+          - "Running as root in container"
+          - "No resource limits (denial of service)"
+          - "Persistent storage (data can leak between runs)"
+
+    - id: anthropic-computer-use
+      name: Anthropic Computer Use Implementation
+      description: |
+          Official implementation pattern using Claude's computer use capability.
+          Claude 3.5 Sonnet was the first frontier model to offer computer use.
+          Claude Opus 4.5 is now the "best model in the world for computer use."
+
+          Key capabilities:
+          - screenshot: Capture current screen state
+          - mouse: Click, move, drag operations
+          - keyboard: Type text, press keys
+          - bash: Run shell commands
+          - text_editor: View and edit files
+
+          Tool versions:
+          - computer_20251124 (Opus 4.5): Adds zoom action for detailed inspection
+          - computer_20250124 (All other models): Standard capabilities
+
+          Critical limitation: "Some UI elements (like dropdowns and scrollbars)
+          might be tricky for Claude to manipulate" - Anthropic docs
+      when_to_use:
+          - "Building production computer use agents"
+          - "Need highest quality vision understanding"
+          - "Full desktop control (not just browser)"
+      implementation: |
+          # Full implementation in associated python files
+          # See implementation_plan.md for detail
+      anti_patterns:
+          - "Not using betas=['computer-use-2024-10-22'] flag"
+          - "Full resolution screenshots (wasteful)"
+          - "No command sanitization for bash tool"
+          - "Unbounded execution time"
+
+    - id: browser-use-pattern
+      name: Browser-Use Pattern (Playwright-based)
+      description: |
+          For browser-only automation, using structured DOM access is more efficient
+          than pixel-based computer use. Playwright MCP allows LLMs to control
+          browsers using accessibility snapshots rather than screenshots.
+
+          Advantages over vision-based:
+          - Faster: No image processing required
+          - Cheaper: Text tokens vs image tokens
+          - More precise: Direct element targeting
+          - More reliable: No coordinate drift
+
+          When to use vision vs structured:
+          - Vision: Desktop apps, complex UIs, visual verification
+          - Structured: Web automation, form filling, data extraction
+      when_to_use:
+          - "Browser-only automation tasks"
+          - "Form filling and web interactions"
+          - "When speed and cost matter more than visual understanding"
+      implementation: |
+          from playwright.async_api import async_playwright
+          # ... (See full file)
+
+tags:
+    - computer-use
+    - anthropic
+    - claude
+    - vision-agents
+    - automation
+    - browser-use
+    - playwright

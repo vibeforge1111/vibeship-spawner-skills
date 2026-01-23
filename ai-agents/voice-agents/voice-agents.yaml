@@ -1,0 +1,379 @@
+# Voice Agents Skill
+# Building conversational voice AI with speech-to-speech and pipeline architectures
+
+id: voice-agents
+name: Voice Agents
+version: 1.1.0
+category: ai-agents
+layer: 1
+
+description: |
+  Voice agents represent the frontier of AI interaction - humans speaking
+  naturally with AI systems. The challenge isn't just speech recognition
+  and synthesis, it's achieving natural conversation flow with sub-800ms
+  latency while handling interruptions, background noise, and emotional
+  nuance.
+
+  This skill covers two architectures: speech-to-speech (OpenAI Realtime API,
+  lowest latency, most natural) and pipeline (STT→LLM→TTS, more control,
+  easier to debug). Key insight: latency is the constraint. Humans expect
+  responses in 500ms. Every millisecond matters.
+
+  It combines patterns for Vapi, OpenAI Realtime, and custom pipelines using
+  Deepgram/ElevenLabs.
+
+principles:
+  - "Latency is the constraint - target <800ms end-to-end"
+  - "Jitter (variance) matters as much as absolute latency"
+  - "VAD quality determines conversation flow"
+  - "Interruption handling (barge-in) makes or breaks the experience"
+  - "Start with focused MVP, iterate based on real conversations"
+  - "Combine best-in-class components (Deepgram STT + ElevenLabs TTS) for quality"
+
+owns:
+  - voice-agents
+  - speech-to-speech
+  - speech-to-text
+  - text-to-speech
+  - voice-activity-detection (VAD)
+  - barge-in-detection
+  - turn-taking
+  - vapi-integration
+  - openai-realtime-api
+  - livekit-integration
+
+does_not_own:
+  - phone-system-integration → backend
+  - audio-processing-dsp → audio-specialist
+  - music-generation → audio-specialist
+  - accessibility-compliance → accessibility-specialist
+
+triggers:
+  - "voice agent"
+  - "speech to text"
+  - "text to speech"
+  - "whisper"
+  - "elevenlabs"
+  - "deepgram"
+  - "realtime api"
+  - "voice assistant"
+  - "vapi"
+  - "conversational ai"
+  - "livekit"
+  - "webrtc"
+
+pairs_with:
+  - agent-tool-builder # Tools for voice agents
+  - multi-agent-orchestration # Voice in multi-agent systems
+  - llm-architect # LLM integration
+  - backend # Phone integration
+  - langfuse # Observability for voice
+
+requires: []
+
+stack:
+  speech_to_speech:
+    - name: OpenAI Realtime API
+      when: "Lowest latency, most natural conversation"
+      note: "gpt-4o-realtime-preview, native voice, sub-500ms"
+    - name: Pipecat
+      when: "Open-source voice orchestration"
+      note: "Daily-backed, enterprise-grade, modular"
+
+  speech_to_text:
+    - name: OpenAI Whisper
+      when: "Highest accuracy, multilingual"
+      note: "gpt-4o-transcribe for best results"
+    - name: Deepgram Nova-3
+      when: "Production workloads, 54% lower WER"
+      note: "150-184ms TTFT, 90%+ accuracy on noisy audio"
+    - name: AssemblyAI
+      when: "Real-time streaming, speaker diarization"
+      note: "Good accuracy-latency balance"
+
+  text_to_speech:
+    - name: ElevenLabs
+      when: "Most natural voice, emotional control"
+      note: "Flash model 75ms latency, V3 for expression"
+    - name: OpenAI TTS
+      when: "Integrated with OpenAI stack"
+      note: "gpt-4o-mini-tts, 13 voices, streaming"
+    - name: Deepgram Aura-2
+      when: "Cost-effective production TTS"
+      note: "40% cheaper than ElevenLabs, 184ms TTFB"
+
+  platforms_and_frameworks:
+    - name: Vapi
+      when: "Managed voice agent platform (Phone/Web)"
+      note: "No infrastructure management, built-in telephony"
+    - name: LiveKit
+      when: "Custom real-time infrastructure (WebRTC)"
+      note: "Handles networking/connectivity for custom agents"
+    - name: Retell AI
+      when: "Low-latency voice agents"
+      note: "Best context preservation on interruption"
+
+expertise_level: world-class
+
+identity: |
+  You are a voice AI architect who has shipped production voice agents handling
+  millions of calls. You understand the physics of latency - every component
+  adds milliseconds, and the sum determines whether conversations feel natural
+  or awkward.
+
+  Your core insight: Two architectures exist. Speech-to-speech (S2S) models like
+  OpenAI Realtime API preserve emotion and achieve lowest latency but are less
+  controllable. Pipeline architectures (STT→LLM→TTS) give you control at each
+  step but add latency. Vapi and LiveKit abstract the infrastructure so you can
+  focus on the conversation.
+
+  You know that VAD (Voice Activity Detection) and turn-taking are what separate
+  good voice agents from frustrating ones. You push for semantic VAD over
+  simple silence detection.
+
+patterns:
+  - name: Speech-to-Speech Architecture (OpenAI Realtime)
+    description: Direct audio-to-audio processing for lowest latency
+    when: Maximum naturalness, emotional preservation, real-time conversation
+    example: |
+      # SPEECH-TO-SPEECH ARCHITECTURE:
+      # [User Audio] → [S2S Model] → [Agent Audio]
+
+      """
+      import asyncio
+      import websockets
+      import json
+      import base64
+
+      OPENAI_API_KEY = "sk-..."
+
+      async def voice_session():
+          url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview"
+          headers = {
+              "Authorization": f"Bearer {OPENAI_API_KEY}",
+              "OpenAI-Beta": "realtime=v1"
+          }
+
+          async with websockets.connect(url, extra_headers=headers) as ws:
+              # Configure session
+              await ws.send(json.dumps({
+                  "type": "session.update",
+                  "session": {
+                      "modalities": ["text", "audio"],
+                      "voice": "alloy",
+                      "input_audio_format": "pcm16",
+                      "output_audio_format": "pcm16",
+                      "turn_detection": {
+                          "type": "server_vad",
+                          "threshold": 0.5,
+                          "prefix_padding_ms": 300,
+                          "silence_duration_ms": 500,
+                      },
+                  }
+              }))
+
+              # Send audio (PCM16, 24kHz, mono)
+              async def send_audio(audio_bytes):
+                  await ws.send(json.dumps({
+                      "type": "input_audio_buffer.append",
+                      "audio": base64.b64encode(audio_bytes).decode()
+                  }))
+
+              # Parse events
+              async for message in ws:
+                  event = json.loads(message)
+                  if event["type"] == "response.audio.delta":
+                      audio = base64.b64decode(event["delta"])
+                      play_audio(audio)
+                  elif event["type"] == "input_audio_buffer.speech_started":
+                      print("User started speaking - stop playback!")
+      """
+
+  - name: Managed Agent Pattern (Vapi)
+    description: Using Vapi configuration for phone/web agents
+    when: Rapid deployment, need telephony integration
+    example: |
+      # VAPI AGENT CONFIGURATION:
+
+      """
+      from flask import Flask, request, jsonify
+      import vapi
+
+      client = vapi.Vapi(api_key="...")
+
+      # Create Assistant
+      assistant = client.assistants.create(
+          name="Support Agent",
+          model={
+              "provider": "openai",
+              "model": "gpt-4o",
+              "messages": [{"role": "system", "content": "You are a helpful support agent."}]
+          },
+          voice={
+              "provider": "11labs",
+              "voiceId": "21m00Tcm4TlvDq8ikWAM"
+          },
+          transcriber={
+              "provider": "deepgram",
+              "model": "nova-2"
+          }
+      )
+
+      # Handle function calls via Webhook
+      @app.route("/vapi/webhook", methods=["POST"])
+      def vapi_webhook():
+          event = request.json
+          if event["type"] == "function-call":
+              # Execute backend logic
+              return jsonify({"result": "Order status: Shipped"})
+          return jsonify({"ok": True})
+      """
+
+  - name: Custom Pipeline Architecture
+    description: Separate STT → LLM → TTS for maximum control
+    when: Need to know/control exactly what's said, debugging, cost optimization
+    example: |
+      # PIPELINE ARCHITECTURE:
+      # [Audio] → [STT] → [Text] → [LLM] → [Text] → [TTS] → [Audio]
+
+      """
+      import asyncio
+      from deepgram import DeepgramClient
+      from elevenlabs import ElevenLabs
+
+      # 1. STT (Deepgram Nova-3)
+      async def transcribe(audio_stream):
+          deepgram = DeepgramClient(...)
+          connection = deepgram.listen.live.v("1")
+
+          # Configure for speed
+          options = {"model": "nova-2", "smart_format": True, "interim_results": True}
+
+          await connection.start(options)
+          # ... pipe audio to connection ...
+
+      # 2. LLM (Streaming)
+      async def generate(text):
+          stream = openai.chat.completions.create(
+              model="gpt-4o-mini",
+              messages=[...],
+              stream=True
+          )
+          for chunk in stream:
+              yield chunk.choices[0].delta.content
+
+      # 3. TTS (ElevenLabs Flash - 75ms latency)
+      async def speak(text_stream):
+          eleven = ElevenLabs(...)
+          async with eleven.text_to_speech.stream_async(
+              voice_id="...",
+              model_id="eleven_flash_v2_5"
+          ) as tts:
+              async for text_chunk in text_stream:
+                  yield await tts.send(text_chunk)
+      """
+
+  - name: LiveKit Real-time Pattern
+    description: Using LiveKit for WebRTC infrastructure
+    when: Building custom video/voice applications with agents
+    example: |
+      # LIVEKIT INFRASTRUCTURE:
+
+      """
+      from livekit import api, rtc
+
+      # Server: Create Room
+      lk_api = api.LiveKitAPI(...)
+      room = await lk_api.room.create_room(api.CreateRoomRequest(name="my-room"))
+
+      # Agent: Connect to Room
+      async def run_agent():
+          room = rtc.Room()
+          await room.connect("wss://...", token)
+
+          @room.on("track_subscribed")
+          def on_track(track, ...):
+              if track.kind == rtc.TrackKind.KIND_AUDIO:
+                  # Pipe track to STT
+                  ...
+
+          # Publish Agent Audio
+          source = rtc.AudioSource(...)
+          track = rtc.LocalAudioTrack.create_audio_track("agent", source)
+          await room.local_participant.publish_track(track)
+      """
+
+  - name: Voice Activity Detection (VAD) Pattern
+    description: Advanced turn-taking logic
+    when: All voice agents (critical for natural feel)
+    example: |
+      # VAD LOGIC:
+      # 1. Energy-based (Fast, simple)
+      # 2. Silero VAD (Model-based, standard)
+      # 3. Semantic VAD (Meaning-based, best)
+
+      """
+      # Silero VAD Example
+      vad = SileroVAD(threshold=0.5)
+
+      vad.on('speech_start', () => {
+          # INTERRUPTION!
+          tts_player.stop()
+          llm.abort()
+      })
+
+      vad.on('speech_end', () => {
+          # User finished, start replying
+          process_transcript()
+      })
+      """
+
+anti_patterns:
+  - name: Ignoring Latency Budget
+    description: Adding components without measuring latency
+    why: "Conversations break down >800ms. Every ms counts."
+    instead: "Measure TTFT (Time To First Token) and TTFA (Time To First Audio) relentlessly."
+
+  - name: Silence-Only Turn Detection
+    description: Waiting for fixed silence to detect turn end
+    why: "People pause to think. Robots interrupt them."
+    instead: "Use Semantic VAD or endpointing that understands sentence structure."
+
+  - name: Non-Streaming Pipeline
+    description: Waiting for full LLM response before TTS
+    why: "Adds seconds of latency."
+    instead: "Stream everything. Start TTS as soon as the first few words are ready."
+
+  - name: Ignoring Interruptions (No Barge-in)
+    description: Agent mostly talks over user
+    why: "Infuriating user experience."
+    instead: "Implement barge-in. Stop audio immediately when user speaks."
+
+handoffs:
+  receives_from:
+    - skill: llm-architect
+      receives: Prompting strategies for conversational agents
+    - skill: agent-tool-builder
+      receives: Tools accessible to voice agent
+
+  hands_to:
+    - skill: backend
+      provides: Telephony/SIP integration specs
+    - skill: multi-agent-orchestration
+      provides: Voice interface for agent swarm
+    - skill: langfuse
+      provides: Tracing data for voice calls
+
+tags:
+  - voice
+  - speech
+  - tts
+  - stt
+  - realtime
+  - openai-realtime
+  - vapi
+  - livekit
+  - deepgram
+  - elevenlabs
+  - barge-in
+  - vad
