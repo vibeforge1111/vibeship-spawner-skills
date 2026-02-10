@@ -1,93 +1,512 @@
 # Micro-SaaS Launcher Collaboration
+# How this skill orchestrates with others to ship profitable SaaS products
 
 id: micro-saas-launcher-collaboration
 skill: micro-saas-launcher
-version: 1.0.0
+version: 2.0.0
 
-receives_from:
+# ============================================================================
+# PREREQUISITES
+# ============================================================================
+
+prerequisites:
+  required: []  # This skill can be used standalone
+  recommended:
+    - supabase-backend   # Database + auth layer
+    - nextjs-app-router  # Frontend framework
+    - stripe             # Payment processing
+    - landing-page-design # Conversion-optimized pages
+
+# ============================================================================
+# CONTEXT FLOW - What this skill receives and provides
+# ============================================================================
+
+receives_context_from:
   - skill: landing-page-design
-    context: "SaaS landing page"
     receives:
-      - "Conversion-optimized landing"
+      - "Conversion-optimized landing page"
       - "Pricing page design"
-    provides: "Launch-ready landing page"
+      - "CTA and copy recommendations"
+    provides: "Launch-ready landing page with clear value proposition"
 
   - skill: backend
-    context: "Backend architecture"
     receives:
-      - "API structure"
-      - "Database design"
-    provides: "Scalable SaaS backend"
+      - "API structure and endpoint design"
+      - "Database schema recommendations"
+      - "Authentication architecture"
+    provides: "Scalable SaaS backend foundation"
+
+  - skill: llm-architect
+    receives:
+      - "AI integration architecture"
+      - "Prompt engineering patterns"
+      - "Cost optimization strategies"
+    provides: "AI-powered feature implementation plan"
+
+  - skill: seo
+    receives:
+      - "Keyword research and opportunities"
+      - "Content strategy for organic growth"
+      - "Technical SEO recommendations"
+    provides: "Long-term organic acquisition channel"
+
+provides_context_to:
+  - skill: landing-page-design
+    provides:
+      - "SaaS value proposition and positioning"
+      - "Target customer persona"
+      - "Pricing tiers and feature lists"
+      - "Competitive differentiation"
+
+  - skill: stripe
+    provides:
+      - "Pricing model (flat, tiered, usage-based)"
+      - "Subscription tier structure"
+      - "Trial period configuration"
+      - "Webhook events to handle"
+
+  - skill: seo
+    provides:
+      - "Target keywords from customer research"
+      - "Content topics from support conversations"
+      - "Landing page SEO requirements"
+
+  - skill: backend
+    provides:
+      - "MVP scope (what to build, what to skip)"
+      - "Data model requirements"
+      - "Multi-tenancy approach"
+      - "Performance requirements for micro-SaaS scale"
+
+# ============================================================================
+# DELEGATION TRIGGERS
+# ============================================================================
 
 delegation_triggers:
-  - trigger: "landing page|conversion|pricing page"
+  - trigger: "landing page|conversion|pricing page|hero section"
     delegate_to: landing-page-design
     pattern: sequential
-    context: "SaaS landing page"
+    context: "SaaS landing page - needs clear value prop, pricing section, CTA above fold"
 
-  - trigger: "stripe|payments|subscription"
+  - trigger: "stripe|payments|subscription|billing|checkout"
     delegate_to: stripe
     pattern: sequential
-    context: "Payment integration"
+    context: "Payment integration - Stripe Checkout + webhooks + Customer Portal"
 
-  - trigger: "SEO|content|organic"
+  - trigger: "SEO|content|organic|blog strategy|keywords"
     delegate_to: seo
     pattern: sequential
-    context: "Organic growth"
+    context: "Organic growth channel - target problem-aware keywords, build content moat"
 
-  - trigger: "backend|API|database"
+  - trigger: "backend|API|database|schema|migrations"
     delegate_to: backend
     pattern: parallel
-    context: "Backend development"
+    context: "Backend development - keep it simple, use Supabase/managed services"
 
-  - trigger: "email|newsletter|drip"
+  - trigger: "email|newsletter|drip|onboarding sequence"
     delegate_to: email
     pattern: sequential
-    context: "Email marketing"
+    context: "Email marketing - welcome sequence, trial nudges, churn prevention"
+
+  - trigger: "supabase|row level security|edge functions|realtime"
+    delegate_to: supabase-backend
+    pattern: parallel
+    context: "Supabase setup - auth, database, RLS policies, edge functions"
+
+  - trigger: "next.js|app router|server components|RSC"
+    delegate_to: nextjs-app-router
+    pattern: parallel
+    context: "Next.js frontend - App Router, RSC for SEO, API routes for backend"
+
+  - trigger: "AI feature|LLM|claude api|openai|chatbot|generation"
+    delegate_to: llm-architect
+    pattern: sequential
+    context: "AI integration - structured output, cost management, error handling"
+
+  - trigger: "tailwind|shadcn|UI components|design system"
+    delegate_to: tailwind-ui
+    pattern: parallel
+    context: "UI layer - shadcn/ui components, Tailwind utility classes, responsive design"
+
+# ============================================================================
+# FEEDBACK LOOPS
+# ============================================================================
 
 feedback_loops:
   receives_feedback_from:
     - skill: analytics
-      signal: "User behavior and conversion data"
-      action: "Optimize funnel and features"
+      signal: "User behavior data and conversion funnels"
+      action: "Optimize onboarding, identify drop-off points, prioritize features"
 
     - skill: seo
-      signal: "Organic traffic data"
-      action: "Content strategy refinement"
+      signal: "Organic traffic data and keyword rankings"
+      action: "Refine content strategy, optimize landing page copy"
+
+    - skill: stripe
+      signal: "Payment success/failure rates, MRR data"
+      action: "Adjust pricing, improve checkout flow, reduce involuntary churn"
 
   sends_feedback_to:
     - skill: landing-page-design
-      signal: "Conversion rates"
-      action: "Optimize landing page"
+      signal: "Landing page conversion rates and bounce data"
+      action: "A/B test headlines, adjust CTA placement, refine social proof"
 
     - skill: backend
-      signal: "Performance requirements"
-      action: "Scale infrastructure"
+      signal: "Performance bottlenecks and scale requirements"
+      action: "Optimize queries, add caching, scale infrastructure"
+
+    - skill: llm-architect
+      signal: "AI feature usage patterns and cost per user"
+      action: "Optimize prompts, adjust model selection, implement caching"
+
+# ============================================================================
+# ESCALATION PATHS
+# ============================================================================
+
+escalation_paths:
+  - situation: "Stripe webhook failures or payment issues"
+    escalate_to: stripe
+    with_context: "Webhook logs, error codes, affected customers"
+    urgency: high
+
+  - situation: "Database performance degradation at scale"
+    escalate_to: backend
+    with_context: "Slow queries, table sizes, index usage"
+    urgency: medium
+
+  - situation: "AI costs exceeding revenue per user"
+    escalate_to: llm-architect
+    with_context: "Token usage per user, prompt sizes, caching status"
+    urgency: high
+
+  - situation: "Landing page conversion below 3%"
+    escalate_to: landing-page-design
+    with_context: "Current conversion rate, traffic sources, heatmap data"
+    urgency: medium
+
+  - situation: "Security vulnerability or data breach"
+    escalate_to: security
+    with_context: "Vulnerability type, affected data, exposure timeline"
+    urgency: critical
+
+# ============================================================================
+# COMMON SKILL COMBINATIONS (Workflows)
+# ============================================================================
 
 common_combinations:
-  - name: Weekend SaaS Launch
+  - name: 2-Week MVP Launch
+    description: "The core workflow - idea to paying product in 14 days"
+    skills:
+      - micro-saas-launcher  # Strategy and scoping
+      - supabase-backend     # Database + auth
+      - nextjs-app-router    # Frontend framework
+      - stripe               # Payments
+      - tailwind-ui          # UI components
+      - landing-page-design  # Landing page
+    workflow: |
+      Day 1: Validate idea (micro-saas-launcher)
+      Day 1: Set up project (nextjs-app-router + supabase-backend)
+      Day 2: Auth + basic UI (supabase-backend + tailwind-ui)
+      Day 3-4: Core feature (nextjs-app-router)
+      Day 5-6: Stripe integration (stripe)
+      Day 7: Polish and bug fixes
+      Day 8-9: Landing page (landing-page-design)
+      Day 10: Legal pages + SEO basics
+      Day 11-12: Pre-launch marketing
+      Day 13: Final testing
+      Day 14: LAUNCH
+
+  - name: AI-Powered SaaS Launch
+    description: "Ship an AI-powered micro-SaaS with cost controls"
+    skills:
+      - micro-saas-launcher  # Strategy and scoping
+      - llm-architect        # AI architecture
+      - supabase-backend     # Database + auth
+      - nextjs-app-router    # Frontend
+      - stripe               # Payments
+    workflow: |
+      Day 1: Validate AI use case + scoping
+      Day 2: Set up project + auth
+      Day 3-4: AI feature implementation (llm-architect)
+      Day 5: Cost tracking + rate limiting
+      Day 6: Stripe integration with usage tracking
+      Day 7: Polish + error handling
+      Day 8-9: Landing page with AI demo
+      Day 10-12: Testing + pre-launch
+      Day 13-14: Launch with usage-based or tiered pricing
+
+  - name: Content-Led SaaS Growth
+    description: "Build long-term organic acquisition for your SaaS"
+    skills:
+      - micro-saas-launcher  # Strategy
+      - seo                  # Search optimization
+      - landing-page-design  # Conversion pages
+    workflow: |
+      Week 1: Keyword research + content strategy (seo)
+      Week 2: Build MVP with SEO in mind (micro-saas-launcher)
+      Week 3: Create 5 pillar content pieces (seo)
+      Week 4: Optimize landing pages for conversion (landing-page-design)
+      Ongoing: 2 content pieces/week + link building
+
+  - name: Weekend SaaS Sprint
+    description: "Ship a simple SaaS tool in a single weekend"
     skills:
       - micro-saas-launcher
       - supabase-backend
       - nextjs-app-router
       - stripe
     workflow: |
-      1. Validate idea (1 day)
-      2. Set up Supabase + Next.js
-      3. Build core feature
-      4. Add Stripe payments
-      5. Create landing page
-      6. Launch to communities
+      Saturday AM: Validate + project setup + auth
+      Saturday PM: Core feature (one thing only)
+      Sunday AM: Stripe + landing page
+      Sunday PM: Test + launch to 1 community
+      Monday: Follow up with every signup
 
-  - name: Content-Led SaaS
-    skills:
-      - micro-saas-launcher
-      - seo
-      - content-strategy
-      - landing-page-design
-    workflow: |
-      1. Research keywords
-      2. Build MVP with SEO in mind
-      3. Create content around problem
-      4. Launch product
-      5. Grow organically
+# ============================================================================
+# INTEGRATION CONTRACTS
+# ============================================================================
+
+contracts:
+  with_stripe:
+    micro_saas_launcher_provides:
+      - "Pricing model decision (flat, tiered, usage)"
+      - "Price points and tier names"
+      - "Trial period length (if any)"
+      - "Required webhook events"
+    stripe_provides:
+      - "Checkout session implementation"
+      - "Webhook handler with verification"
+      - "Customer Portal configuration"
+      - "Subscription lifecycle management"
+    interface_example: |
+      // micro-saas-launcher defines the pricing
+      const PRICING = {
+        model: "tiered",
+        tiers: [
+          { name: "Pro", price: 2900, interval: "month" },
+          { name: "Business", price: 7900, interval: "month" }
+        ],
+        trial_days: 14,
+        webhooks: [
+          "checkout.session.completed",
+          "customer.subscription.updated",
+          "customer.subscription.deleted",
+          "invoice.payment_failed"
+        ]
+      };
+
+      // stripe skill implements the integration
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${baseUrl}/dashboard?success=true`,
+        cancel_url: `${baseUrl}/pricing`,
+      });
+
+  with_supabase:
+    micro_saas_launcher_provides:
+      - "Data model requirements"
+      - "Auth provider preferences"
+      - "Multi-tenancy approach"
+      - "RLS policy requirements"
+    supabase_provides:
+      - "Database schema and migrations"
+      - "Auth configuration"
+      - "Row-level security policies"
+      - "Edge function templates"
+    interface_example: |
+      -- micro-saas-launcher defines the core tables
+      -- supabase-backend implements with proper RLS
+
+      create table public.profiles (
+        id uuid references auth.users primary key,
+        email text not null,
+        plan text default 'free',
+        stripe_customer_id text,
+        created_at timestamptz default now()
+      );
+
+      -- RLS: users can only see their own profile
+      alter table public.profiles enable row level security;
+      create policy "Users can view own profile"
+        on public.profiles for select
+        using (auth.uid() = id);
+
+  with_landing_page:
+    micro_saas_launcher_provides:
+      - "Value proposition and positioning"
+      - "Target customer persona"
+      - "Feature list and pricing"
+      - "Social proof / testimonials"
+    landing_page_provides:
+      - "Conversion-optimized page design"
+      - "Above-fold hero section"
+      - "Pricing section with CTAs"
+      - "SEO-optimized meta tags"
+
+# ============================================================================
+# DECISION POINTS
+# ============================================================================
+
+decision_points:
+  - question: "Should I use a free tier or a free trial?"
+    guidance: |
+      Free tier when:
+      - Product has viral/sharing mechanics
+      - Free users create content that attracts paid users
+      - Low marginal cost per free user
+      - Example: Notion, Figma, Slack
+
+      Free trial when:
+      - High marginal cost per user (AI, compute)
+      - Product value is clear but needs time to demonstrate
+      - You want higher conversion rates
+      - Example: Most B2B SaaS tools
+
+      Neither (paid only) when:
+      - Very clear, immediate value
+      - Small, specific audience
+      - High price point ($99+/mo)
+      - Example: Niche B2B tools
+
+  - question: "Should I build a multi-tenant app or single-tenant?"
+    guidance: |
+      Multi-tenant (shared database):
+      - 99% of micro-SaaS should use this
+      - Supabase RLS makes it easy and secure
+      - Lower operational cost
+      - Simpler deployment
+
+      Single-tenant (separate database per customer):
+      - Only if regulatory/compliance requires it
+      - Healthcare, finance with strict data isolation
+      - Significantly more complex to operate
+      - Only consider at enterprise price points ($500+/mo)
+
+  - question: "Should I add an AI feature?"
+    guidance: |
+      Yes, add AI if:
+      - It directly reduces time-to-value for users
+      - You can clearly explain what the AI does
+      - The cost per AI action is < 10% of user's subscription
+      - You have a fallback if the AI fails
+
+      No, skip AI if:
+      - "AI" is just a buzzword in your marketing
+      - The core product works fine without it
+      - AI costs would eat your margins
+      - You're adding AI to compete, not to solve a problem
+
+# ============================================================================
+# ECOSYSTEM RECOMMENDATIONS
+# ============================================================================
+
+ecosystem:
+  essential_services:
+    - name: Vercel
+      use_when: "Hosting any Next.js SaaS"
+      why: "Free tier, automatic deploys, global CDN, serverless functions"
+      avoid_when: "Need persistent servers or WebSocket-heavy apps"
+
+    - name: Supabase
+      use_when: "Need database + auth + realtime for MVP"
+      why: "Free tier, Postgres, auth included, great DX"
+      avoid_when: "Need complex database features or multi-region"
+
+    - name: Stripe
+      use_when: "Any SaaS with recurring payments"
+      why: "Industry standard, great docs, handles taxes and compliance"
+      avoid_when: "Never avoid Stripe for SaaS"
+
+    - name: Resend
+      use_when: "Transactional emails (welcome, receipts, alerts)"
+      why: "Developer-friendly, React email templates, free tier"
+      avoid_when: "Need advanced marketing automation (use Loops instead)"
+
+    - name: PostHog
+      use_when: "Product analytics and user behavior tracking"
+      why: "Free tier, privacy-friendly, feature flags, session replay"
+      avoid_when: "Only need basic page views (use Plausible)"
+
+    - name: Sentry
+      use_when: "Error monitoring in production"
+      why: "Free tier, great Next.js integration, source maps"
+      avoid_when: "Never avoid error monitoring"
+
+  ai_services:
+    - name: Anthropic Claude API
+      use_when: "AI features needing reasoning, analysis, or structured output"
+      why: "Best reasoning, tool use, long context, structured output"
+      avoid_when: "Need image generation or speech-to-text"
+
+    - name: OpenAI API
+      use_when: "Broader ecosystem support or specific model needs"
+      why: "Widest ecosystem, vision, DALL-E, Whisper"
+      avoid_when: "Claude is better for reasoning-heavy tasks"
+
+    - name: Upstash
+      use_when: "Rate limiting, caching, and serverless Redis"
+      why: "Serverless, pay-per-request, great Vercel integration"
+      avoid_when: "Need full Redis feature set"
+
+  marketing_tools:
+    - name: Product Hunt
+      use_when: "Launching dev/design tools"
+      why: "Free, high-quality traffic, credibility"
+
+    - name: Indie Hackers
+      use_when: "Building in public, getting feedback from founders"
+      why: "Supportive community, great for early validation"
+
+    - name: Buffer / Typefully
+      use_when: "Scheduling social media posts"
+      why: "Batch content creation, consistent posting"
+
+    - name: Ahrefs / Ubersuggest
+      use_when: "Keyword research and SEO planning"
+      why: "Find low-competition keywords your SaaS can rank for"
+
+# ============================================================================
+# PLATFORM-SPECIFIC INTEGRATION
+# ============================================================================
+
+platform_integration:
+  vercel:
+    setup: |
+      ## Vercel Deployment for Micro-SaaS
+
+      1. Connect GitHub repo to Vercel
+      2. Set environment variables in Vercel dashboard
+      3. Configure custom domain
+      4. Enable Vercel Analytics (free)
+      5. Set up preview deployments for PRs
+
+      Environment variables needed:
+      - NEXT_PUBLIC_SUPABASE_URL
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY
+      - SUPABASE_SERVICE_ROLE_KEY
+      - STRIPE_SECRET_KEY
+      - STRIPE_WEBHOOK_SECRET
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+      - RESEND_API_KEY (if using email)
+      - ANTHROPIC_API_KEY (if using AI)
+    considerations:
+      - "Use Edge Runtime for fast API routes"
+      - "Serverless function timeout is 10s on free tier (60s on Pro)"
+      - "Use ISR for landing pages (revalidate every hour)"
+      - "Monitor function invocations to stay in free tier"
+
+  supabase:
+    setup: |
+      ## Supabase Setup for Micro-SaaS
+
+      1. Create Supabase project
+      2. Enable email + Google auth
+      3. Create core tables with RLS
+      4. Set up database webhooks for critical events
+      5. Configure automatic backups (Pro plan)
+    considerations:
+      - "Always enable RLS on every table"
+      - "Use service_role key ONLY on server-side"
+      - "Free tier: 500MB database, 50MB file storage"
+      - "Set up connection pooling for production"

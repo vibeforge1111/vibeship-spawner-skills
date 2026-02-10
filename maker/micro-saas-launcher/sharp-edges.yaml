@@ -1,193 +1,606 @@
 # Micro-SaaS Launcher Sharp Edges
+# Battle-tested gotchas from launching 12 micro-SaaS products
+# These are the things that kill solo founders at 3am
 
 sharp_edges:
   - id: no-distribution
     summary: Great product, no way to reach customers
-    severity: high
-    situation: Built product, can't get users
+    severity: critical
+    situation: |
+      You spent 2 months building a polished product. You launch it.
+      Nobody comes. You post on Twitter to your 47 followers. Crickets.
+      You try Product Hunt and get 12 upvotes. You realize you have
+      no way to reach your target audience.
     why: |
-      Built first, marketing second.
-      No existing audience.
-      No SEO, no ads, no community.
-      "If you build it, they will come" is false.
+      Built first, marketing second. You assumed "if I build it, they
+      will come." They won't. Distribution is HARDER than building.
+      Most technical founders are great at building and terrible at
+      reaching customers. The product that wins isn't the best - it's
+      the one that reaches customers first.
     solution: |
-      ## Distribution First
+      ## Distribution First - Before You Build
 
-      ### Before Building, Answer:
-      - Where do my customers hang out?
-      - Can I reach them for free?
-      - Do I have an existing audience?
-      - Is SEO viable for this?
+      ### Before Writing Code, Answer:
+      - Where do my customers hang out online?
+      - Can I reach 100 of them for free within 30 days?
+      - Do I have or can I build an audience?
+      - Is SEO viable for this niche? (use Ahrefs free tier to check)
+      - Can I partner with someone who already has my audience?
 
-      ### Distribution Channels
-      | Channel | Time to Results | Cost |
-      |---------|-----------------|------|
-      | SEO | 6-12 months | Low |
-      | Content marketing | 3-6 months | Low |
-      | Paid ads | Immediate | High |
-      | Community | 1-3 months | Low |
-      | Product Hunt | One day | Free |
-      | Partnerships | 1-2 months | Free |
+      ### Distribution Channels Ranked for Solo Founders
+      | Channel | Time to Results | Cost | Difficulty | Best For |
+      |---------|-----------------|------|------------|----------|
+      | Existing audience | Immediate | Free | Easy | If you have one |
+      | Communities | 1-2 weeks | Free | Medium | Niche products |
+      | Product Hunt | 1 day | Free | Medium | Dev/design tools |
+      | SEO/Content | 3-12 months | Low | Hard | Evergreen tools |
+      | Paid ads | Immediate | $500+ | Medium | B2B with clear ROI |
+      | Partnerships | 2-4 weeks | Free | Medium | Complementary tools |
+      | Cold outreach | 1-2 weeks | Low | Hard | B2B high-ticket |
+      | Build in public | 1-3 months | Free | Easy | Dev-facing tools |
 
-      ### Build Distribution Into Product
+      ### Build Distribution Into Your Product
       ```
-      - "Powered by [Your Product]" badge
-      - Invite/referral features
-      - Public profiles/pages (SEO)
-      - Shareable results/reports
-      - Integration marketplace listings
+      Must-have growth loops:
+      - "Powered by [Your Product]" on output/embeds
+      - Invite/referral with incentive ("Get 1 month free")
+      - Public profiles/pages that rank in Google
+      - Shareable results/reports with your branding
+      - Integration marketplace listings (Zapier, etc.)
       ```
 
-      ### If Stuck
-      1. Start content marketing NOW
-      2. Be active in communities (give value)
-      3. Partner with complementary products
-      4. Consider paid acquisition
+      ### If You Already Built Without Distribution
+      ```
+      1. Start content marketing TODAY (1 blog post/week minimum)
+      2. Be active in 3 communities daily (Reddit, Discord, Slack)
+      3. Launch on Product Hunt (better late than never)
+      4. Cold DM 10 potential customers per day
+      5. Find 3 complementary products and propose cross-promotion
+      6. Start building in public on Twitter/X
+      ```
     symptoms:
-      - Zero organic traffic
-      - Relying only on launches
-      - No email list
-      - No content strategy
-    detection_pattern: "no users|can't grow|no traffic|distribution"
+      - Zero organic traffic after launch
+      - Relying only on one-time launch spikes
+      - No email list or it's under 100 people
+      - No content strategy or SEO plan
+      - "I'll figure out marketing later"
+      - All traffic comes from your own social posts
+    detection_pattern: "no users|can't grow|no traffic|distribution|no marketing"
 
   - id: wrong-market
-    summary: Building for market that can't/won't pay
-    severity: high
-    situation: Lots of interest, no conversions
+    summary: Building for a market that can't or won't pay
+    severity: critical
+    situation: |
+      You built a great tool. Lots of signups. Users love it. But
+      nobody upgrades to paid. You've tried discounts, features, emails.
+      Your free tier has 500 users and your paid tier has 3.
     why: |
-      Targeting consumers vs business.
-      Targeting broke demographics.
-      Free alternatives are good enough.
-      Not solving urgent problem.
+      You're targeting people who don't have budgets. Students, broke
+      startups, consumers who think software should be free. Or you're
+      competing with excellent free alternatives (Google Docs, Notion free tier).
+      The market exists but the money doesn't.
     solution: |
-      ## Market Selection
+      ## Market Selection for Revenue
 
-      ### B2B vs B2C
-      | Factor | B2B | B2C |
-      |--------|-----|-----|
+      ### B2B vs B2C for Micro-SaaS
+      | Factor | B2B (Recommended) | B2C (Hard Mode) |
+      |--------|-------------------|-----------------|
       | Price tolerance | $50-500+/mo | $5-20/mo |
-      | Acquisition cost | Higher | Lower |
-      | Churn | Lower | Higher |
-      | Support needs | Higher | Lower |
-      | Solo-founder friendly | Yes | Harder |
+      | Acquisition cost | Higher but worth it | Must be viral/organic |
+      | Churn rate | 3-5% monthly | 7-15% monthly |
+      | Support burden | Manageable | High volume, low value |
+      | Solo-founder viable? | YES | Very hard |
+      | Path to $10k MRR | 20-200 customers | 500-2000 customers |
 
-      ### Good Markets for Micro-SaaS
-      - Small businesses
-      - Freelancers/agencies
-      - Developers
-      - Creators with revenue
-      - Professionals (lawyers, doctors, etc.)
+      ### Best Markets for Micro-SaaS (Ranked)
+      | Market | Why | Price Tolerance |
+      |--------|-----|-----------------|
+      | Agencies/consultants | Buy tools that make money | $49-199/mo |
+      | Small business owners | Clear ROI, budget exists | $29-99/mo |
+      | Developers | Will pay for time savings | $19-99/mo |
+      | Creators with revenue | Tool = more revenue | $19-49/mo |
+      | Professionals (legal, medical) | High income, needs compliance | $49-299/mo |
+      | E-commerce sellers | Direct revenue impact | $29-199/mo |
 
-      ### Red Flag Markets
-      - Students
-      - Startups with no funding
-      - Mass consumers
-      - Markets with free alternatives
+      ### Red Flag Markets (Avoid)
+      | Market | Why It Fails |
+      |--------|-------------|
+      | Students | No money, want free |
+      | Pre-revenue startups | No budget, will churn |
+      | Mass consumers | Need millions of users |
+      | Markets with free Google tools | Can't compete with free |
+      | Hobbyists | Won't pay for "nice to have" |
 
-      ### Pivot Signals
-      - High interest, zero payments
-      - Users love it but won't pay
-      - Competition is all free
-      - Target market has no budget
+      ### Pivot Signals - When to Change Markets
+      ```
+      Strong pivot signals:
+      - 100+ free users, < 5 paid users
+      - "Love it, but can't afford it" feedback
+      - Users comparing you to free alternatives
+      - Your best users are in a different segment than expected
+      - B2C users asking for team features (pivot to B2B)
+      ```
     symptoms:
-      - Lots of signups, no upgrades
-      - "Love it, but can't afford"
-      - Only works with freemium
-      - Comparisons to free alternatives
-    detection_pattern: "won't pay|no budget|free alternative|can't afford"
+      - Many signups, near-zero paid conversions
+      - "Love it, but can't afford" feedback
+      - Only works with freemium/ad model
+      - Constant comparison to free alternatives
+      - Users requesting features that don't align with revenue
+    detection_pattern: "won't pay|no budget|free alternative|can't afford|no conversions"
 
   - id: churn-killing-growth
-    summary: New signups leaving as fast as they come
+    summary: New signups leaving as fast as they arrive
     severity: high
-    situation: MRR plateaued despite new customers
+    situation: |
+      You're getting 20 new signups per month. MRR should be growing.
+      But it's flat or declining. Turns out you're losing almost as
+      many customers as you're gaining. The leaky bucket problem.
     why: |
-      Product doesn't deliver value.
-      Onboarding is broken.
-      Wrong customers signing up.
-      Missing key features.
+      Product doesn't deliver value fast enough. Onboarding is broken.
+      Users signed up with high expectations and got a confusing dashboard.
+      They never reached the "aha moment." Or they did, but the product
+      doesn't solve their problem well enough to justify paying monthly.
     solution: |
-      ## Fixing Churn
+      ## Fixing the Churn Problem
 
-      ### Understand Why
+      ### Step 1: Understand WHY People Leave
       ```
-      1. Email churned users (personal, not automated)
-      2. Look at last active date
-      3. Check onboarding completion
-      4. Survey at cancellation
+      1. Email every churned user personally (not automated)
+         Subject: "Quick question - [Name]"
+         Body: "Hey, I noticed you cancelled. No hard feelings.
+         Could you tell me what didn't work? I'm trying to make
+         [Product] better. - [Your name]"
+
+      2. Analyze behavior data:
+         - When do they cancel? (Day 3? Day 14? Month 2?)
+         - What features did they use/not use?
+         - Did they complete onboarding?
+
+      3. Check if you're attracting wrong customers:
+         - Where did churned users come from?
+         - Did they match your ideal customer profile?
       ```
 
-      ### Churn Benchmarks
-      | Churn Rate | Assessment |
-      |------------|------------|
-      | < 3% monthly | Excellent |
-      | 3-5% monthly | Good |
-      | 5-7% monthly | Needs work |
-      | > 7% monthly | Critical |
+      ### Churn Rate Benchmarks for Micro-SaaS
+      | Monthly Churn | Assessment | Action |
+      |---------------|------------|--------|
+      | < 3% | Excellent | Focus on growth |
+      | 3-5% | Good | Optimize onboarding |
+      | 5-7% | Concerning | Deep dive into reasons |
+      | 7-10% | Critical | Fix before growing |
+      | > 10% | Emergency | Stop marketing, fix product |
 
-      ### Quick Fixes
-      - Improve onboarding (first 7 days critical)
-      - Add "aha moment" trigger emails
-      - Check if right users signing up
-      - Add missing must-have features
-      - Increase prices (filters serious users)
+      ### The First 7 Days Are Everything
+      ```
+      The Onboarding Checklist That Reduces Churn:
 
-      ### Onboarding Checklist
+      Day 0 (Signup):
+      [ ] Welcome email within 60 seconds
+      [ ] Clear first action in the app (not a blank dashboard)
+      [ ] Value delivered in first session (even if small)
+
+      Day 1:
+      [ ] Follow-up email: "Did you try [core feature]?"
+      [ ] In-app tooltip pointing to most important action
+
+      Day 3:
+      [ ] Check-in email if inactive: "Need help getting started?"
+      [ ] Founder personal message if they signed up for paid
+
+      Day 7:
+      [ ] "Here's what you accomplished this week" summary email
+      [ ] Ask for feedback: "What's one thing that would make this better?"
+
+      Day 14 (if trial):
+      [ ] Trial ending reminder with clear upgrade CTA
+      [ ] Offer extended trial if they haven't been active
       ```
-      [ ] Clear first action after signup
-      [ ] Value delivered in first session
-      [ ] Email sequence for first 7 days
-      [ ] Check-in at day 3 if inactive
-      [ ] Success metric defined and tracked
-      ```
+
+      ### Quick Churn Fixes (Ranked by Impact)
+      1. **Fix the empty state** - New users should see value, not a blank page
+      2. **Add templates/examples** - Let users start from something, not nothing
+      3. **Shorten time to value** - Can they get value in < 5 minutes?
+      4. **Personal onboarding email** - From you, not "noreply@"
+      5. **Add a "quick start" guide** - 3 steps to first result
+      6. **Raise prices** - Seriously. Higher prices = more committed users
     symptoms:
-      - MRR not growing despite signups
+      - MRR flat despite consistent new signups
       - Users cancel after first month
-      - Low feature usage
-      - High trial abandonment
-    detection_pattern: "churn|cancel|leaving|not growing"
+      - Low feature usage in analytics
+      - High trial abandonment rate
+      - Support tickets from confused new users
+    detection_pattern: "churn|cancel|leaving|not growing|losing customers"
 
   - id: pricing-too-complex
-    summary: Pricing page confuses potential customers
-    severity: medium
-    situation: Visitors leave pricing page without action
+    summary: Pricing page confuses potential customers into not buying
+    severity: high
+    situation: |
+      Your pricing page has 4 tiers, a feature comparison matrix with
+      30 rows, usage-based add-ons, and a "contact us" enterprise tier.
+      Visitors spend 3 minutes on the pricing page and leave without
+      buying anything.
     why: |
-      Too many tiers.
-      Unclear what's included.
-      Feature matrix confusing.
-      No clear recommendation.
+      Too many options = decision paralysis. The paradox of choice kills
+      conversions. Users don't want to study a spreadsheet to figure out
+      which plan they need. If they can't decide in 30 seconds, they leave.
     solution: |
-      ## Simple Pricing
+      ## Simple Pricing That Converts
 
-      ### Ideal Structure
+      ### The Ideal Micro-SaaS Pricing Structure
       ```
-      Free tier (optional): Limited but useful
-      Paid tier: Everything most need ($X/mo)
-      Enterprise (optional): Custom pricing
+      Option A: Single price (best for simple tools)
+        "$29/month - everything included"
+        Conversion rate: highest
+        Simplicity: maximum
+
+      Option B: Free + Paid (best for growth)
+        "Free: limited to X | Pro: $49/month - unlimited"
+        Conversion rate: high
+        Allows try-before-buy
+
+      Option C: Two paid tiers (max complexity for micro-SaaS)
+        "Pro: $29/month | Business: $79/month"
+        Clear differentiation by one dimension
+        (usage limit, team size, or feature set - not all three)
       ```
 
-      ### If Multiple Tiers
-      - Maximum 3 tiers
-      - Clear differentiation
-      - Highlight recommended tier
-      - Annual discount (20-30%)
+      ### The Perfect Pricing Page
+      | Element | Purpose | Must Have? |
+      |---------|---------|------------|
+      | Big price number | No surprises | Yes |
+      | 3-5 features per tier | Quick comparison | Yes |
+      | Recommended badge | Guide decision | Yes |
+      | Annual discount (20-30%) | Reduce churn | Yes |
+      | FAQ section | Handle objections | Yes |
+      | Money-back guarantee | Reduce risk | Yes |
+      | Social proof near CTA | Build trust | Yes |
+      | Calculator or usage estimator | No | Overkill for micro-SaaS |
 
-      ### Good Pricing Page
-      | Element | Purpose |
-      |---------|---------|
-      | Clear prices | No calculator needed |
-      | Feature list | What's included |
-      | Recommended badge | Guide decision |
-      | FAQ | Handle objections |
-      | Guarantee | Reduce risk |
-
-      ### Testing
-      - A/B test prices
-      - Try removing a tier
-      - Ask customers what's confusing
-      - Check pricing page bounce rate
+      ### Testing Your Pricing
+      ```
+      1. A/B test PRICES, not just tiers
+      2. Try removing a tier (simpler often wins)
+      3. Ask 5 customers: "Was pricing clear?"
+      4. Check pricing page bounce rate in analytics
+      5. If bounce > 60%, your pricing is confusing
+      ```
     symptoms:
-      - High pricing page bounce
-      - "Which plan should I choose?"
-      - Feature comparison requests
-      - Long time to purchase decision
-    detection_pattern: "confusing|which plan|pricing.*bounce|too many"
+      - High pricing page bounce rate
+      - "Which plan should I choose?" support tickets
+      - Feature comparison matrix requests
+      - Long time from pricing page to purchase
+      - Users signing up for wrong tier
+    detection_pattern: "confusing|which plan|pricing.*bounce|too many tiers"
+
+  - id: tech-debt-trap
+    summary: MVP shortcuts become permanent architecture that blocks growth
+    severity: high
+    situation: |
+      You shipped your MVP fast (good!). Now you have paying customers
+      and feature requests. But every change takes 3x longer because
+      your codebase is held together with duct tape. The database schema
+      makes no sense. There are no tests. Deployments break things.
+    why: |
+      MVP shortcuts are fine... for the MVP. But founders forget to
+      pay down the debt. The codebase that got you to 10 customers
+      will fight you getting to 100. The problem compounds: each
+      shortcut makes the next feature slower, which makes you take
+      more shortcuts.
+    solution: |
+      ## Managing Tech Debt in Micro-SaaS
+
+      ### When to Pay Down Debt (Decision Framework)
+      | Situation | Action |
+      |-----------|--------|
+      | < 10 paying customers | Keep shipping, debt is fine |
+      | 10-50 customers | Fix the top 3 pain points |
+      | 50-100 customers | Dedicate 20% of time to refactoring |
+      | > 100 customers | Consider a planned rewrite of worst areas |
+
+      ### The Top 5 Debts That Kill Micro-SaaS
+      ```
+      1. No database migrations
+         - Fix: Start using migrations NOW (Prisma, Drizzle, or raw SQL files)
+         - This blocks every future schema change
+
+      2. No error monitoring
+         - Fix: Add Sentry (free tier, 15 minutes to set up)
+         - You're flying blind without it
+
+      3. No automated deploys
+         - Fix: Vercel + GitHub = automatic
+         - Manual deploys = you'll forget and break things
+
+      4. Hardcoded config everywhere
+         - Fix: Environment variables for ALL config
+         - You need staging/production separation
+
+      5. No tests for the critical path
+         - Fix: Test signup → payment → core feature flow
+         - Not 100% coverage. Just the money path.
+      ```
+
+      ### The "Refactor Friday" System
+      ```
+      Every Friday, spend 2 hours on ONE of these:
+      - Extract a messy function into something readable
+      - Add a test for the most critical user flow
+      - Clean up the database schema (one table at a time)
+      - Remove dead code and unused dependencies
+      - Update dependencies (security patches at minimum)
+      ```
+    symptoms:
+      - Every feature takes 2-3x longer than expected
+      - Fear of deploying on Fridays
+      - Database queries getting slower
+      - "I'll fix it later" has been the plan for 3 months
+      - New bugs appear when fixing old ones
+    detection_pattern: "tech debt|slow development|afraid to deploy|everything breaks"
+
+  - id: solo-founder-burnout
+    summary: Working 80-hour weeks on a product making $500 MRR
+    severity: high
+    situation: |
+      You're the developer, designer, marketer, support agent, and CEO.
+      You're working nights and weekends. Your MRR is growing slowly.
+      You're tired, resenting your own product, and considering giving up.
+    why: |
+      Solo founding is a marathon, not a sprint. You launched with high
+      energy and are now in the "trough of sorrow." The initial excitement
+      is gone, growth is slow, and every customer support email feels like
+      a personal attack. You didn't automate early enough and now you're
+      doing everything manually.
+    solution: |
+      ## Surviving the Solo Founder Grind
+
+      ### The Sustainability Framework
+      ```
+      Non-negotiable boundaries:
+      - Maximum 40 hours/week (yes, really)
+      - No work on weekends (emergencies only)
+      - Exercise 3x/week (your brain needs it)
+      - One day per week with zero screens
+
+      Why this works:
+      - Burnout kills more startups than competition
+      - Creative problem-solving requires rest
+      - Your best ideas come in the shower, not hour 14
+      - Sustainable pace > heroic bursts
+      ```
+
+      ### Automate Before You Burn Out
+      | Manual Task | Automated Solution | Time Saved |
+      |-------------|-------------------|------------|
+      | Answering FAQs | Help docs + AI chatbot | 5 hrs/week |
+      | Billing issues | Stripe Customer Portal | 2 hrs/week |
+      | Onboarding help | Email sequence + guides | 3 hrs/week |
+      | Social posting | Batch + schedule (Buffer) | 3 hrs/week |
+      | Bug triage | Sentry auto-grouping | 2 hrs/week |
+      | Analytics check | Weekly email digest | 1 hr/week |
+
+      ### When to Consider Quitting vs Pivoting
+      ```
+      Quit if:
+      - You've been at it 12+ months with < $1k MRR
+      - AND you've tried 3+ different distribution channels
+      - AND you've talked to 20+ users and pivoted positioning
+      - AND you dread working on it
+
+      Pivot if:
+      - Some users LOVE it but most don't
+      - Revenue is growing but slowly
+      - You see a adjacent opportunity from user feedback
+      - You still enjoy the problem space
+
+      Keep going if:
+      - Revenue is growing month over month (even slowly)
+      - Users are passionate (even if few)
+      - You're learning and improving
+      - You haven't tried all distribution channels yet
+      ```
+    symptoms:
+      - Working 60+ hours/week regularly
+      - Dreading customer support emails
+      - Can't remember last day off
+      - Making reactive decisions instead of strategic ones
+      - Health deteriorating
+    detection_pattern: "burnout|overwhelmed|too much work|giving up|exhausted"
+
+  - id: no-onboarding-aha-moment
+    summary: Users sign up, see a blank dashboard, and never come back
+    severity: high
+    situation: |
+      Your signup rate is decent. But activation is terrible.
+      Users sign up, land on the dashboard, and leave within 60 seconds.
+      They never experience the core value of your product.
+    why: |
+      You built features, not an experience. Your product assumes users
+      know what to do. They don't. The "aha moment" - where users first
+      experience the value - is buried behind 5 clicks and a confusing UI.
+      First-time user experience is an afterthought for most developers.
+    solution: |
+      ## Designing the "Aha Moment"
+
+      ### Find Your Aha Moment
+      ```
+      Your aha moment is when a user first experiences the value.
+
+      Examples:
+      - Analytics tool: First time seeing their own data in a chart
+      - Writing tool: First AI-generated draft
+      - SEO tool: First site audit with actionable recommendations
+      - CRM: First deal moved through pipeline
+
+      To find yours:
+      1. Ask your best customers: "When did you know this was for you?"
+      2. Look at behavior data: What action did retained users take
+         that churned users didn't?
+      3. Time-to-value: How many steps from signup to that moment?
+      ```
+
+      ### Reduce Steps to Aha
+      | Steps to Aha | Expected Activation | Verdict |
+      |-------------|--------------------| --------|
+      | 1 (immediate) | 60-80% | Perfect |
+      | 2-3 steps | 30-50% | Good |
+      | 4-5 steps | 15-25% | Needs work |
+      | 6+ steps | < 10% | Critical problem |
+
+      ### Onboarding Patterns That Work
+      ```
+      1. Pre-fill with real data
+         - Don't show empty states
+         - Use their domain/company to generate sample data
+         - "Here's what your dashboard will look like"
+
+      2. Interactive walkthrough (not a video)
+         - Guide them through THE one action
+         - Celebrate completion ("Your first report is ready!")
+         - Skip button always visible (power users hate tutorials)
+
+      3. Template gallery
+         - "Start from a template" > "Start from scratch"
+         - 3-5 templates covering top use cases
+         - One click to populate with sample data
+
+      4. Progressive disclosure
+         - Show only essential features on day 1
+         - Unlock more as they use the product
+         - Don't overwhelm with all 47 settings on first visit
+      ```
+    symptoms:
+      - High signup rate, low activation rate
+      - Users visit once and never return
+      - Dashboard shows empty states for new users
+      - No guided first-run experience
+      - Average session duration < 2 minutes for new users
+    detection_pattern: "empty dashboard|no onboarding|users leave|activation|first run"
+
+  - id: scope-creep-after-launch
+    summary: Building everything users request instead of what they need
+    severity: medium
+    situation: |
+      You launched. Users love it. Feature requests are pouring in.
+      You build everything they ask for. 3 months later, your simple
+      tool is a bloated mess. New users are confused. Your roadmap
+      is a graveyard of half-finished features.
+    why: |
+      Saying yes feels good. Saying no feels like losing customers.
+      But every feature you add increases complexity, maintenance burden,
+      and cognitive load for new users. Users ask for what they think
+      they want, not what they actually need.
+    solution: |
+      ## Feature Request Management for Solo Founders
+
+      ### The Decision Framework
+      ```
+      For every feature request, ask:
+
+      1. Is this person a PAYING customer? (If no, deprioritize)
+      2. Would this help RETAIN existing customers or ACQUIRE new ones?
+      3. Can I build it in < 1 day?
+      4. Does it align with the core value proposition?
+      5. Have 5+ paying customers asked for this?
+
+      Score: Yes to 4/5 = build it. Less = wait.
+      ```
+
+      ### How to Say No (Without Losing Customers)
+      ```
+      Template:
+      "Thanks for the suggestion! I'm tracking this - you're the [Nth]
+      person to request it. Right now I'm focused on [current priority]
+      because [reason]. I'll let you know if/when I build it."
+
+      This:
+      - Acknowledges the request
+      - Shows you're listening
+      - Sets expectations
+      - Doesn't commit to anything
+      ```
+
+      ### The "One Thing" Principle
+      ```
+      Each month, your product should get better at ONE thing.
+      Not 5 things. Not 10 things. ONE thing.
+
+      Month 1: Core feature works great
+      Month 2: Onboarding is smooth
+      Month 3: Power user features
+      Month 4: Integrations
+      Month 5: Team features (if B2B)
+
+      Sequential focus > parallel chaos.
+      ```
+    symptoms:
+      - Roadmap has 50+ items
+      - New features shipping half-finished
+      - Core feature hasn't improved in months
+      - UI is getting cluttered
+      - You feel busy but not productive
+    detection_pattern: "too many features|roadmap|feature requests|bloated|scope creep"
+
+  - id: ignoring-unit-economics
+    summary: Growing revenue while losing money on every customer
+    severity: medium
+    situation: |
+      MRR is growing! Feels great. But your hosting bill is growing faster.
+      AI API costs are eating your margins. Customer support takes 5 hours
+      per paying customer per month. You're working for free.
+    why: |
+      Revenue ≠ profit. If it costs you $30/month in infrastructure
+      and support per customer, your $29/month plan is losing money.
+      AI-powered SaaS is especially dangerous here - Claude API calls
+      aren't free, and power users can run up massive bills.
+    solution: |
+      ## Unit Economics for Micro-SaaS
+
+      ### Know Your Numbers
+      ```
+      Cost per customer (monthly):
+      - Infrastructure: Hosting + DB + CDN (divide by customers)
+      - AI/API costs: LLM tokens + third-party APIs per customer
+      - Support time: Your hourly rate × support hours per customer
+      - Payment processing: ~2.9% + $0.30 per transaction
+
+      Gross margin = (Revenue per customer - Cost per customer) / Revenue
+      Target: > 70% gross margin for SaaS
+      ```
+
+      ### AI Cost Danger Zone
+      | AI Cost as % of Revenue | Assessment |
+      |------------------------|------------|
+      | < 10% | Healthy |
+      | 10-20% | Watch it |
+      | 20-30% | Optimize NOW |
+      | > 30% | Business model problem |
+
+      ### Cost Optimization Levers
+      ```
+      1. Use smaller models where possible
+         - Claude Haiku for simple tasks, Sonnet for complex
+         - Not everything needs Opus
+
+      2. Cache aggressively
+         - Same input = same output? Cache it.
+         - Save 40-60% on AI costs with smart caching
+
+      3. Set usage limits per plan
+         - Free: 10 AI actions/day
+         - Pro: 100 AI actions/day
+         - Don't offer "unlimited" unless you can afford it
+
+      4. Rate limit power users
+         - 90% of AI costs often come from 10% of users
+         - Per-user rate limits protect your margins
+
+      5. Batch operations where possible
+         - One API call with 10 items > 10 API calls with 1 item
+      ```
+    symptoms:
+      - Revenue growing but bank balance isn't
+      - Hosting costs growing faster than revenue
+      - AI API bills are a surprise every month
+      - Can't afford to invest in marketing
+      - Working for below minimum wage when you do the math
+    detection_pattern: "costs|margin|losing money|expensive|api costs|hosting costs"

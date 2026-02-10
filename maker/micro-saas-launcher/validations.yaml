@@ -1,62 +1,362 @@
 # Micro-SaaS Launcher Validations
+# Automated checks for SaaS application patterns
+# Catches the mistakes that kill micro-SaaS products
 
 validations:
+  # ============================================================================
+  # CRITICAL - Revenue & Security
+  # ============================================================================
+
   - id: no-payment-integration
     name: No Payment Integration
-    severity: high
+    severity: critical
     type: conceptual
-    check: "SaaS should have payment integration"
+    check: "SaaS should have payment integration from day one"
     indicators:
-      - "No Stripe/payment provider"
+      - "No Stripe/payment provider code"
       - "Manual invoicing only"
       - "Free with no upgrade path"
-    message: "No payment integration - can't collect revenue."
-    fix_action: "Integrate Stripe or Lemon Squeezy for payments"
+      - "No pricing page"
+    message: "No payment integration detected. You can't collect revenue without payments."
+    fix_action: "Integrate Stripe Checkout + Customer Portal. Use stripe npm package."
 
   - id: no-auth-system
     name: No User Authentication
-    severity: high
+    severity: critical
     type: conceptual
-    check: "SaaS should have user authentication"
+    check: "SaaS should have proper user authentication"
     indicators:
-      - "No login/signup"
-      - "Rolling your own auth"
-      - "Password stored in plaintext"
-    message: "No proper authentication system."
-    fix_action: "Use Supabase Auth, Clerk, or Auth0 - don't build auth yourself"
+      - "No login/signup flow"
+      - "Rolling custom auth instead of using a service"
+      - "No session management"
+    message: "No proper authentication system. Use Supabase Auth or Clerk."
+    fix_action: "Use Supabase Auth (free) or Clerk - never build auth from scratch"
+
+  - id: hardcoded-secrets
+    name: Hardcoded API Keys or Secrets
+    severity: critical
+    type: regex
+    pattern:
+      - 'sk_live_[a-zA-Z0-9]{20,}'
+      - 'sk-[a-zA-Z0-9]{40,}'
+      - 'STRIPE_SECRET.*=.*["'\'']sk_'
+      - 'api[_-]?key.*=.*["'\''][a-zA-Z0-9]{20,}["'\'']'
+      - 'password.*=.*["'\''][^"'\'']{8,}["'\'']'
+    message: "Hardcoded API key or secret detected. This WILL leak."
+    fix_action: "Move all secrets to environment variables. Use .env.local for development."
+    applies_to:
+      - "*.ts"
+      - "*.tsx"
+      - "*.js"
+      - "*.jsx"
+
+  - id: stripe-webhook-no-verification
+    name: Stripe Webhook Without Signature Verification
+    severity: critical
+    type: regex
+    pattern:
+      - 'req\.body.*stripe(?!.*constructEvent|verifyHeader|webhook.*secret)'
+      - 'stripe.*webhook(?!.*signature|verify|constructEvent)'
+    message: "Stripe webhook handler without signature verification. Anyone can fake webhook calls."
+    fix_action: "Use stripe.webhooks.constructEvent() to verify webhook signatures"
+    applies_to:
+      - "*.ts"
+      - "*.js"
+      - "**/api/**"
+
+  # ============================================================================
+  # ERROR - Will Cause Failures
+  # ============================================================================
+
+  - id: no-error-monitoring
+    name: No Error Monitoring Setup
+    severity: error
+    type: conceptual
+    check: "Production SaaS should have error monitoring"
+    indicators:
+      - "No Sentry, Bugsnag, or error tracking code"
+      - "No global error handler"
+      - "Console.log only error handling"
+    message: "No error monitoring. You won't know when things break in production."
+    fix_action: "Add Sentry (free tier). Takes 15 minutes. npm install @sentry/nextjs"
+
+  - id: no-env-variables
+    name: Missing Environment Variable Configuration
+    severity: error
+    type: regex
+    pattern:
+      - 'createClient\(["\''](http|postgres)'
+      - 'new Stripe\(["'\'']sk_'
+      - 'apiKey.*:.*["'\''][a-zA-Z0-9]'
+    message: "Direct credentials instead of environment variables. Won't work in production."
+    fix_action: "Use process.env.VARIABLE_NAME for all configuration. Create .env.example."
+    applies_to:
+      - "*.ts"
+      - "*.js"
+
+  - id: no-rate-limiting
+    name: No Rate Limiting on API Routes
+    severity: error
+    type: regex
+    pattern:
+      - 'export.*async.*function.*(POST|PUT|DELETE)(?![\s\S]{0,500}rate.?limit|throttle|upstash)'
+    message: "API route without rate limiting. Abuse will kill your costs and performance."
+    fix_action: "Add rate limiting with @upstash/ratelimit or similar. Essential for AI endpoints."
+    applies_to:
+      - "**/api/**/*.ts"
+      - "**/api/**/*.js"
+
+  - id: ai-endpoint-no-cost-tracking
+    name: AI/LLM Endpoint Without Cost Tracking
+    severity: error
+    type: regex
+    pattern:
+      - 'anthropic.*messages\.create(?![\s\S]{0,300}cost|usage|token|track|log)'
+      - 'openai.*chat\.completions\.create(?![\s\S]{0,300}cost|usage|token|track|log)'
+    message: "AI API call without cost tracking. You'll get a surprise bill."
+    fix_action: "Track token usage and cost per user. Set budget alerts."
+    applies_to:
+      - "*.ts"
+      - "*.js"
+
+  - id: no-cors-configuration
+    name: Missing CORS Configuration
+    severity: error
+    type: regex
+    pattern:
+      - 'export.*async.*function.*(GET|POST)(?![\s\S]{0,200}cors|origin|Access-Control)'
+    message: "API route without CORS handling. May cause cross-origin issues."
+    fix_action: "Configure CORS headers in Next.js middleware or route handlers"
+    applies_to:
+      - "**/api/**/*.ts"
+
+  # ============================================================================
+  # WARNING - Should Fix
+  # ============================================================================
 
   - id: no-onboarding
-    name: No User Onboarding
-    severity: medium
+    name: No User Onboarding Flow
+    severity: warning
     type: conceptual
     check: "Should have onboarding flow for new users"
     indicators:
-      - "Users dropped into empty dashboard"
-      - "No welcome email"
-      - "No first-action guidance"
-    message: "No user onboarding - will hurt activation."
-    fix_action: "Add welcome flow, first-action prompt, and onboarding emails"
+      - "Users land on empty dashboard after signup"
+      - "No welcome email triggered on signup"
+      - "No first-action guidance or walkthrough"
+      - "No empty state components"
+    message: "No user onboarding detected. This kills activation and increases churn."
+    fix_action: "Add welcome flow, first-action prompt, empty states, and onboarding email sequence"
 
   - id: no-analytics
     name: No Product Analytics
-    severity: medium
+    severity: warning
     type: conceptual
-    check: "Should track user behavior and metrics"
+    check: "Should track user behavior and key metrics"
     indicators:
-      - "No analytics integration"
-      - "Can't see what users do"
-      - "No conversion tracking"
-    message: "No product analytics - flying blind."
-    fix_action: "Add Posthog, Mixpanel, or simple event tracking"
+      - "No PostHog, Mixpanel, or analytics code"
+      - "No event tracking"
+      - "No conversion funnel tracking"
+    message: "No product analytics. You're flying blind on user behavior."
+    fix_action: "Add PostHog (free, privacy-friendly) or Plausible for basic analytics"
 
   - id: no-legal-pages
     name: Missing Legal Pages
-    severity: medium
+    severity: warning
     type: conceptual
-    check: "Should have privacy policy and terms"
+    check: "Should have privacy policy and terms of service"
     indicators:
-      - "No privacy policy"
-      - "No terms of service"
-      - "Required for Stripe"
-    message: "Missing legal pages - required for payments."
-    fix_action: "Add privacy policy and terms of service (use templates)"
+      - "No /privacy or /terms routes"
+      - "No privacy policy content"
+      - "No terms of service content"
+    message: "Missing legal pages. Required for Stripe and GDPR compliance."
+    fix_action: "Add privacy policy and terms of service. Use generators like Termly or iubenda."
+
+  - id: no-loading-states
+    name: Missing Loading States
+    severity: warning
+    type: regex
+    pattern:
+      - 'useEffect\(.*fetch(?![\s\S]{0,200}loading|isLoading|pending|Skeleton|Spinner)'
+      - 'useSWR\((?![\s\S]{0,200}isLoading|isValidating)'
+    message: "Data fetching without loading states. Users see blank screens."
+    fix_action: "Add loading skeletons or spinners for all async operations"
+    applies_to:
+      - "*.tsx"
+      - "*.jsx"
+
+  - id: no-error-boundaries
+    name: No Error Boundaries
+    severity: warning
+    type: regex
+    pattern:
+      - 'export.*default.*function.*Page(?![\s\S]{0,500}ErrorBoundary|error\.tsx)'
+    message: "Page component without error boundary. Errors crash the entire page."
+    fix_action: "Add error.tsx files for route error handling in Next.js App Router"
+    applies_to:
+      - "**/app/**/page.tsx"
+
+  - id: no-metadata-seo
+    name: Missing SEO Metadata
+    severity: warning
+    type: regex
+    pattern:
+      - 'export.*default.*function.*Page(?![\s\S]{0,500}metadata|generateMetadata|Head)'
+    message: "Page without SEO metadata. Invisible to search engines."
+    fix_action: "Export metadata object or generateMetadata function in each page"
+    applies_to:
+      - "**/app/**/page.tsx"
+
+  - id: console-log-in-production
+    name: Console.log Left in Production Code
+    severity: warning
+    type: regex
+    pattern:
+      - 'console\.(log|debug|info)\('
+    message: "Console.log in production code. Use proper logging or remove."
+    fix_action: "Remove console.log or replace with proper logging (e.g., Pino, winston)"
+    applies_to:
+      - "**/api/**/*.ts"
+      - "**/api/**/*.js"
+
+  # ============================================================================
+  # INFO - Best Practices
+  # ============================================================================
+
+  - id: no-og-image
+    name: No Open Graph Image
+    severity: info
+    type: conceptual
+    check: "Should have OG image for social sharing"
+    indicators:
+      - "No og:image meta tag"
+      - "No opengraph-image file in app directory"
+    message: "No OG image. Social shares will look blank and unprofessional."
+    fix_action: "Add opengraph-image.tsx in app/ directory for auto-generated OG images"
+
+  - id: no-sitemap
+    name: No Sitemap
+    severity: info
+    type: conceptual
+    check: "Should have sitemap.xml for SEO"
+    indicators:
+      - "No sitemap.xml or sitemap.ts file"
+      - "No robots.txt"
+    message: "No sitemap. Search engines can't efficiently crawl your site."
+    fix_action: "Add app/sitemap.ts for automatic sitemap generation in Next.js"
+
+  - id: no-favicon
+    name: Missing Favicon
+    severity: info
+    type: conceptual
+    check: "Should have a favicon for browser tabs"
+    indicators:
+      - "No favicon.ico in public/ or app/"
+      - "No apple-touch-icon"
+    message: "No favicon. Looks unprofessional in browser tabs."
+    fix_action: "Add favicon.ico to app/ directory. Use realfavicongenerator.net"
+
+# ============================================================================
+# CODE SMELLS - Things to Watch For
+# ============================================================================
+
+code_smells:
+  - id: god-api-route
+    name: God API Route
+    description: "Single API route doing too many things (auth, validation, business logic, DB, response formatting)"
+    pattern: null
+    suggestion: "Split into middleware (auth), service (logic), and route (orchestration)"
+
+  - id: client-side-auth-only
+    name: Client-Side Auth Only
+    description: "Auth checks only in React components, not in API routes or middleware"
+    pattern: 'useSession|useUser(?![\s\S]{0,500}middleware|getServerSession)'
+    suggestion: "Always verify auth server-side. Client-side checks are for UX, not security."
+
+  - id: n-plus-one-queries
+    name: N+1 Database Queries
+    description: "Fetching related data in a loop instead of a single join/include"
+    pattern: 'for.*await.*\.(find|select|query)\('
+    suggestion: "Use joins, includes, or batch fetching instead of looping queries"
+
+  - id: no-input-validation
+    name: No Input Validation
+    description: "API routes accepting user input without validation"
+    pattern: 'req\.body\.(?![\s\S]{0,100}(zod|yup|joi|parse|validate|schema))'
+    suggestion: "Validate all input with Zod schemas. Never trust client data."
+
+# ============================================================================
+# BEST PRACTICE CHECKLISTS
+# ============================================================================
+
+best_practices:
+  pre_launch_checklist:
+    recommendation: |
+      ## Pre-Launch Checklist for Micro-SaaS
+
+      ### Must Have (Launch Blockers)
+      - [ ] Core feature works end-to-end
+      - [ ] User authentication (Supabase Auth / Clerk)
+      - [ ] Payment processing (Stripe Checkout)
+      - [ ] Stripe webhook handling with signature verification
+      - [ ] Welcome email on signup
+      - [ ] Landing page with clear value prop
+      - [ ] Privacy policy and terms of service
+      - [ ] Custom domain configured
+      - [ ] HTTPS enabled (automatic on Vercel)
+      - [ ] Environment variables for all secrets
+
+      ### Should Have (Fix Within 1 Week)
+      - [ ] Error monitoring (Sentry)
+      - [ ] Basic analytics (PostHog)
+      - [ ] Loading states and error states
+      - [ ] Mobile responsive design
+      - [ ] OG image for social sharing
+      - [ ] Favicon and branding
+      - [ ] 404 page
+      - [ ] Email for payment failures
+      - [ ] Rate limiting on API routes
+
+      ### Nice to Have (Fix Within 1 Month)
+      - [ ] Sitemap and robots.txt
+      - [ ] SEO metadata on all pages
+      - [ ] Automated tests for payment flow
+      - [ ] Staging environment
+      - [ ] Database backups configured
+      - [ ] Customer feedback widget
+      - [ ] Help docs / FAQ page
+      - [ ] Usage tracking and cost monitoring
+
+  security_checklist:
+    recommendation: |
+      ## Security Checklist for Micro-SaaS
+
+      - [ ] All secrets in environment variables (never in code)
+      - [ ] Stripe webhook signature verification
+      - [ ] Server-side auth verification on all API routes
+      - [ ] Input validation with Zod on all endpoints
+      - [ ] Rate limiting on auth and payment endpoints
+      - [ ] CSRF protection enabled
+      - [ ] Content Security Policy headers
+      - [ ] SQL injection prevention (use parameterized queries)
+      - [ ] XSS prevention (React handles most, check dangerouslySetInnerHTML)
+      - [ ] File upload validation (if applicable)
+      - [ ] Dependency audit (npm audit)
+
+  stripe_integration_checklist:
+    recommendation: |
+      ## Stripe Integration Checklist
+
+      - [ ] Stripe Checkout for new subscriptions
+      - [ ] Webhook handler for these events:
+            - checkout.session.completed
+            - customer.subscription.updated
+            - customer.subscription.deleted
+            - invoice.payment_failed
+            - invoice.payment_succeeded
+      - [ ] Webhook signature verification
+      - [ ] Customer Portal for self-serve billing
+      - [ ] Sync subscription status to your database
+      - [ ] Handle failed payments gracefully (grace period)
+      - [ ] Test with Stripe CLI: stripe listen --forward-to localhost:3000/api/webhook
+      - [ ] Price IDs in environment variables (not hardcoded)
+      - [ ] Idempotency keys for critical operations
