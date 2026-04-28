@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/vibeforge1111-vibeship-spawner-skills-badge.png)](https://mseep.ai/app/vibeforge1111-vibeship-spawner-skills)
+
 # Spawner Skills
 
 > **[spawner.vibeship.co](https://spawner.vibeship.co)** | **[Browse All Skills](https://spawner.vibeship.co/skills)**
