@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+
+const OUTPUT_FORMAT = (() => { const idx = process.argv.indexOf("--output-format"); return idx > -1 && idx + 1 < process.argv.length ? process.argv[idx+1] : "text"; })();
 const REPO_URL = 'https://github.com/vibeforge1111/vibeship-spawner-skills.git';
 const SKILLS_DIR = path.join(os.homedir(), '.spawner', 'skills');
 const SPAWNER_DIR = path.join(os.homedir(), '.spawner');
