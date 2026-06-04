@@ -59,7 +59,9 @@ function updateFile(filePath, pattern, replacement, count) {
   const newContent = content.replace(pattern, replacement(count));
 
   if (content !== newContent) {
-    fs.writeFileSync(fullPath, newContent);
+    const tmpPath = fullPath + '.tmp';
+    fs.writeFileSync(tmpPath, newContent);
+    fs.renameSync(tmpPath, fullPath);
     console.log(`  ✓ Updated: ${filePath}`);
     return true;
   } else {
